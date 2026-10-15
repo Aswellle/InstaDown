@@ -27,7 +27,12 @@ USER_AGENT = (
 # Instagram 为社交平台抓取（oEmbed/嵌入）公开提供的 UA：
 # 使用它时 IG 返回含 contextJSON 的完整页面（公开元数据，无需登录，不绕过任何权限）。
 CRAWLER_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
-X_IG_APP_ID = "936619743392459"  # Instagram 官方网页端公开 App ID
+# Instagram 官方网页端公开的 App ID（任何浏览器访问 instagram.com 都会携带，
+# 非逆向所得、非私有接口凭据）。
+X_IG_APP_ID = "936619743392459"
+# 请求间隔节流（秒）：既是礼貌抓取的下限，也是账号安全的必要条件。
+# 请勿调小或绕过 —— 高频访问会触发 IG 风控，且违背本项目的使用意图
+# （个人归档工具，不是批量采集器）。
 MIN_INTERVAL = 1.5
 TIMEOUT = 20
 
