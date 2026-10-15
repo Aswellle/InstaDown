@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   X,
@@ -6,20 +6,26 @@ import {
   FolderOpen,
   RotateCcw,
   Copy,
+  ExternalLink,
   History as HistoryIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { HistoryRow } from '@shared/types'
+import type { HistoryRow, MediaItem } from '@shared/types'
 import { formatBytes, formatDate } from '@/lib/utils'
+import { canViewInApp, fileKindOf, localFileUrl } from '@/lib/local-file'
 import { FileThumb } from '@/components/ui/file-thumb'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface HistoryPanelProps {
   open: boolean
   onClose: () => void
+  /** 应用内查看：把（可查看条目 + 点击索引）交给 App 渲染 MediaViewer。
+   *  查看器状态放在 App 是为了 Esc 分层（先关查看器、再关面板）——
+   *  若放在本组件内，App 的全局 Esc 会同时关掉两者。 */
+  onOpenViewer: (items: MediaItem[], index: number) => void
 }
 
-export function HistoryPanel({ open, onClose }: HistoryPanelProps) {
+export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps) {
   const [history, setHistory] = useState<HistoryRow[]>([])
   const [loading, setLoading] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
@@ -42,6 +48,39 @@ export function HistoryPanel({ open, onClose }: HistoryPanelProps) {
     }
   }, [open, fetchHistory])
 
+  /** 可查看条目（图片/视频）→ MediaViewer 条目。
+   *  url 用本地文件协议：已落盘的文件不再依赖任何远端链接，
+   *  离线、原链接过期都能正常查看。 */
+  const viewableItems = useMemo<MediaItem[]>(
+    () =>
+      history
+        .filter((r) => canViewInApp(r.path))
+        .map((r) => ({
+          id: String(r.id),
+          type: fileKindOf(r.path) === 'video' ? 'video' : 'image',
+          url: localFileUrl(r.path),
+          thumb_url: null,
+          width: null,
+          height: null,
+          duration: null,
+          taken_at: r.created_at
+        })),
+    [history]
+  )
+
+  const handleOpen = useCallback(
+    (row: HistoryRow) => {
+      if (!canViewInApp(row.path)) {
+        // 非图片/视频（未知扩展名）：应用内无法渲染，交给系统默认程序
+        void window.instadown.openFile(row.path).catch(() => toast.error('无法打开文件'))
+        return
+      }
+      const idx = viewableItems.findIndex((i) => i.id === String(row.id))
+      onOpenViewer(viewableItems, idx >= 0 ? idx : 0)
+    },
+    [viewableItems, onOpenViewer]
+  )
+
   const handleReveal = useCallback(async (path: string) => {
     try {
       await window.instadown.revealFile(path)
@@ -50,7 +89,7 @@ export function HistoryPanel({ open, onClose }: HistoryPanelProps) {
     }
   }, [])
 
-  const handleOpenFile = useCallback(async (path: string) => {
+  const handleOpenExternal = useCallback(async (path: string) => {
     try {
       await window.instadown.openFile(path)
     } catch {
@@ -144,8 +183,9 @@ export function HistoryPanel({ open, onClose }: HistoryPanelProps) {
                     <HistoryItem
                       key={row.id}
                       row={row}
-                      onOpen={handleOpenFile}
+                      onOpen={handleOpen}
                       onReveal={handleReveal}
+                      onOpenExternal={handleOpenExternal}
                       onCopy={handleCopyPath}
                       onReDownload={handleReDownload}
                     />
@@ -174,19 +214,23 @@ function HistoryItem({
   row,
   onOpen,
   onReveal,
+  onOpenExternal,
   onCopy,
   onReDownload
 }: {
   row: HistoryRow
-  onOpen: (path: string) => void
+  onOpen: (row: HistoryRow) => void
   onReveal: (path: string) => void
+  onOpenExternal: (path: string) => void
   onCopy: (path: string) => void
   onReDownload: () => void
 }) {
+  const inApp = canViewInApp(row.path)
   return (
     <div
       className="group flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-surface-hover"
-      onClick={() => onOpen(row.path)}
+      onClick={() => onOpen(row)}
+      title={inApp ? '在应用内查看' : '用系统默认程序打开'}
     >
       {/* 缩略图：图片直接读盘显示，视频/其他显示类型图标 —— 一眼看出每项是什么 */}
       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-surface-hover/60">
@@ -205,7 +249,7 @@ function HistoryItem({
           <span>{formatBytes(row.size)}</span>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <button
           onClick={(e) => { e.stopPropagation(); onReveal(row.path) }}
           className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
@@ -213,6 +257,16 @@ function HistoryItem({
         >
           <FolderOpen className="h-3.5 w-3.5" />
         </button>
+        {/* 非图片/视频才需要外部程序入口；可内查看的条目由点击本身完成 */}
+        {!inApp && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenExternal(row.path) }}
+            className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
+            title="用系统默认程序打开"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); onReDownload() }}
           className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"

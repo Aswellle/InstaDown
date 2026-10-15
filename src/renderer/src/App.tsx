@@ -49,11 +49,14 @@ export default function App() {
   // 应用主题（浅色 / 深色 / 跟随系统）
   useApplyTheme()
   const isDark = useIsDark()
+  const themeMode = useSettingsStore((s) => s.settings?.theme ?? 'light')
 
-  // 同步原生窗口外观（Windows 窗口控制按钮区随主题变色）
+  // 同步原生窗口外观（Windows 窗口控制按钮区随主题）。
+  // 传原始模式：'system' 时由主进程按系统偏好解析，且系统主题变化时
+  // 主进程会自行刷新原生控件颜色（渲染层由 useApplyTheme 处理）。
   useEffect(() => {
-    void window.instadown.setNativeTheme(isDark ? 'dark' : 'light')
-  }, [isDark])
+    void window.instadown.setNativeTheme(themeMode)
+  }, [themeMode])
 
 
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -67,6 +70,8 @@ export default function App() {
   const [libLoading, setLibLoading] = useState(false)
   /** 全屏库的查看器条目（MediaRow → MediaItem 适配） */
   const [libViewer, setLibViewer] = useState<{ items: MediaItem[]; index: number } | null>(null)
+  /** 下载历史的查看器条目（本地已下载文件，读盘显示） */
+  const [historyViewer, setHistoryViewer] = useState<{ items: MediaItem[]; index: number } | null>(null)
   const [viewerItems, setViewerItems] = useState<MediaItem[]>([])
   const [viewerIndex, setViewerIndex] = useState(0)
   const lastAutoClipboard = useRef('')
@@ -271,11 +276,17 @@ export default function App() {
       } else if (e.key === 'Escape') {
         // 全屏库打开时由它自己的 Esc 处理器接管（逐级：选区→下拉→面板）
         if (libraryFull) return
-        // Esc 逐级返回：先关查看器/清选择，没有可清的了再回主页
+        // Esc 逐级返回：查看器 → 侧边面板 → 选择 → 回到主页
         if (viewerItems.length) {
           setViewerItems([]); setViewerIndex(0)
         } else if (libViewer) {
           setLibViewer(null)
+        } else if (historyViewer) {
+          setHistoryViewer(null)
+        } else if (historyOpen) {
+          setHistoryOpen(false)
+        } else if (libraryOpen) {
+          setLibraryOpen(false)
         } else if (selected.size > 0) {
           clearSelection()
         } else if (view.mode !== 'empty') {
@@ -289,7 +300,7 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length, selected, selectAll, clearSelection, viewerItems.length, libViewer, view.mode, goHome, libraryFull])
+  }, [items.length, selected, selectAll, clearSelection, viewerItems.length, libViewer, historyViewer, historyOpen, libraryOpen, view.mode, goHome, libraryFull])
 
   const downloadItems = async (targets: MediaItem[]) => {
     if (targets.length === 0) return
@@ -447,7 +458,11 @@ export default function App() {
       </div>
 
       <div className="relative flex min-h-0 flex-1">
-        <HistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
+        <HistoryPanel
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onOpenViewer={(its, idx) => setHistoryViewer({ items: its, index: idx })}
+        />
         <LibraryPanel
           open={libraryOpen}
           onClose={() => setLibraryOpen(false)}
@@ -616,7 +631,7 @@ export default function App() {
           {/* 选中操作栏（悬浮于内容之上）。
               有模态面板打开时隐藏：z-30 < 面板的 z-50，但两者会重叠成
               视觉上的"按钮打架"（曾与设置面板底部按钮糊在一起）。 */}
-          {!settingsOpen && !accountOpen && !historyOpen && !libraryOpen && !libraryFull && !viewerItems.length && !libViewer && (
+          {!settingsOpen && !accountOpen && !historyOpen && !libraryOpen && !libraryFull && !viewerItems.length && !libViewer && !historyViewer && (
             <SelectionBar
               count={selected.size}
               total={items.length}
@@ -681,6 +696,14 @@ export default function App() {
           if (row) void downloadLibItems([row])
           setLibViewer(null)
         }}
+      />
+      {/* 下载历史的查看器：文件已在本机，隐藏下载按钮（读盘显示，不走外部查看器） */}
+      <MediaViewer
+        items={historyViewer?.items ?? []}
+        initialIndex={historyViewer?.index ?? 0}
+        onClose={() => setHistoryViewer(null)}
+        onDownload={() => setHistoryViewer(null)}
+        hideDownload
       />
 
       <AnimatePresence>

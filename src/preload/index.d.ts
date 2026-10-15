@@ -77,7 +77,10 @@ declare global {
       igResetAndLogin(): Promise<{ ok: boolean; hasSession?: boolean; username?: string | null; avatar?: string | null; cancelled?: boolean; message?: string }>
       igLogout(): Promise<void>
       igLoginStatus(): Promise<{ persisted: boolean; partition: boolean; profile: { username: string; avatar: string } | null }>
-      setNativeTheme(mode: 'light' | 'dark'): Promise<void>
+      /** 原始主题模式（'system' 交由主进程解析，保持系统跟随不被冻结） */
+      setNativeTheme(mode: 'light' | 'dark' | 'system'): Promise<void>
+      /** 主进程权威深色值广播（themeSource 切换不触发 matchMedia change 事件） */
+      onNativeTheme(cb: (dark: boolean) => void): () => void
       readClipboard(): Promise<string>
       revealFile(path: string): Promise<void>
       clearHistory(): Promise<void>

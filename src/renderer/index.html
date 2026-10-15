@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <title>InstaDownloader</title>
     <!-- img-src 必须包含 instadown-img:：图片走本地缓存协议（IG CDN 链接会过期）。
-         instadown-file: 用于下载历史的本地文件缩略图。
-         缺失时图片会被 CSP 拦下，表现为全部变成占位符。 -->
+         instadown-file: 用于下载历史的本地文件缩略图与"应用内查看已下载文件"
+         （img 与 video 都要放行，缺失时被 CSP 拦下且无控制台报错，表现为全占位符）。 -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' instadown-img: instadown-file: https: data: blob:; media-src 'self' https: blob:; connect-src 'self' instadown-img: https:; font-src 'self'"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' instadown-img: instadown-file: https: data: blob:; media-src 'self' instadown-file: https: blob:; connect-src 'self' instadown-img: https:; font-src 'self'"
     />
   </head>
   <body>

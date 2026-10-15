@@ -39,8 +39,18 @@ const api = {
   // 诊断（临时）：返回登录页探针原始结果，供 CDP 冒烟测试
   igProbeLoginPage: () => ipcRenderer.invoke('ig:probeLoginPage'),
 
-  // 原生窗口外观（Windows 窗口控制按钮区随主题）
-  setNativeTheme: (mode: 'light' | 'dark') => ipcRenderer.invoke('window:setNativeTheme', mode),
+  // 原生窗口外观（Windows 窗口控制按钮区随主题）。
+  // 传原始 ThemeMode（含 'system'）而非已解析的 light/dark：主进程据此设置
+  // nativeTheme.themeSource，渲染进程的 prefers-color-scheme 才能继续跟随
+  // 系统（若钉死为 light/dark，'跟随系统'模式会在首次调用后被冻结）。
+  setNativeTheme: (mode: 'light' | 'dark' | 'system') =>
+    ipcRenderer.invoke('window:setNativeTheme', mode),
+  /** 主进程权威深色值：themeSource 切换不派发 matchMedia change 事件，需广播兜底 */
+  onNativeTheme: (cb: (dark: boolean) => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, dark: boolean) => cb(dark)
+    ipcRenderer.on('theme:native', listener)
+    return () => ipcRenderer.removeListener('theme:native', listener)
+  },
 
   readClipboard: () => ipcRenderer.invoke('clipboard:readText'),
   revealFile: (path: string) => ipcRenderer.invoke('file:reveal', path),

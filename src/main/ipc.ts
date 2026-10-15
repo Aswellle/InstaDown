@@ -1,7 +1,8 @@
-import { BrowserWindow, dialog, ipcMain, clipboard, shell, Notification } from 'electron'
+import { BrowserWindow, dialog, ipcMain, clipboard, shell, Notification, nativeTheme } from 'electron'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isProbablyIgUrl, classifyIgUrl } from '@shared/ig-url'
+import { themeColorsFor } from '@shared/theme'
 import type {
   MediaCollection,
   ProfileUser,
@@ -425,23 +426,43 @@ export function registerIpc(deps: IpcDeps): void {
   })
 
   // ------------------------------------------------- 原生窗口 / 主题同步
-  // Windows 的窗口控制按钮（最小化/最大化/关闭）区由原生绘制，
-  // 需按当前主题更新 titleBarOverlay 颜色与窗口底色。
-  handle('window:setNativeTheme', (mode: 'light' | 'dark') => {
+  // Windows 的窗口控制按钮（最小化/最大化/关闭）区由原生绘制，需按当前主题
+  // 更新 titleBarOverlay 颜色与窗口底色。
+  //
+  // 传入的是原始 ThemeMode（'system' 也原样传）：themeSource 必须同步为同一
+  // 模式，否则会出现两类不同步 ——
+  //  (a) 只改 setTitleBarOverlay 不改 themeSource：按钮区保持旧色（浅色主题下
+  //      渲染层已黑、控制区仍白，用户实测复现）；
+  //  (b) 把 'system' 钉死为解析后的 light/dark：渲染进程的 prefers-color-scheme
+  //      随之被冻结，系统主题切换后应用不再跟随。
+  const applyNativeTheme = (): void => {
     const w = win()
     if (!w || w.isDestroyed()) return
-    const dark = mode === 'dark'
-    const bg = dark ? '#09090b' : '#ffffff'
-    const symbol = dark ? '#a1a1aa' : '#52525b'
+    // 以 themeSource 生效后的实际值取色：'system' 时解析为当前系统偏好
+    const dark = nativeTheme.shouldUseDarkColors
+    const { bg, symbol } = themeColorsFor(dark)
     w.setBackgroundColor(bg)
     if (process.platform === 'win32') {
       try {
         w.setTitleBarOverlay({ color: bg, symbolColor: symbol, height: 40 })
-      } catch {
-        /* 某些平台/版本不支持，忽略 */
+      } catch (e) {
+        console.error('[theme] setTitleBarOverlay failed:', (e as Error).message)
       }
     }
+    // 渲染进程必须收到权威值：themeSource 切换会更新渲染层的
+    // prefers-color-scheme，但 Electron 不派发对应的 change 事件（实测
+    // matchMedia 的 change 回调为空），且切换瞬间渲染层读到的还是旧值 ——
+    // 表现为"深色 → 跟随系统"后界面卡在深色。广播兜底，重读即修正。
+    w.webContents.send('theme:native', dark)
+  }
+  handle('window:setNativeTheme', (mode: 'light' | 'dark' | 'system') => {
+    const next = mode === 'light' || mode === 'dark' || mode === 'system' ? mode : 'system'
+    nativeTheme.themeSource = next
+    applyNativeTheme()
   })
+  // 'system' 模式下系统主题变化：原生控件（含 Windows 窗口控制按钮）自行刷新。
+  // 渲染层的 prefers-color-scheme 由 Chromium 同步更新，useApplyTheme 会跟随。
+  nativeTheme.on('updated', applyNativeTheme)
 
   // ------------------------------------------------- Instagram 登录窗口
   // 清除分区后重新登录（用于会话失效/残留时从干净状态开始）

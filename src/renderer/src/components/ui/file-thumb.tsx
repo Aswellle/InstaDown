@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FileVideo, File as FileIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { fileKindOf, localFileUrl } from '@/lib/local-file'
 
 /**
  * 本地文件缩略图：下载历史里直观展示每一项是什么。
@@ -12,17 +13,13 @@ import { cn } from '@/lib/utils'
  * - 加载失败或非图片：回退到文件类型图标。
  */
 
-const IMG_EXT = /\.(jpe?g|png|webp|gif|avif|bmp)$/i
-const VID_EXT = /\.(mp4|mov|m4v|webm|avi|mkv)$/i
-
 export function FileThumb({ path, className }: { path: string; className?: string }) {
-  const isImage = IMG_EXT.test(path)
-  const isVideo = VID_EXT.test(path)
+  const kind = fileKindOf(path)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => setFailed(false), [path])
 
-  if (isVideo) {
+  if (kind === 'video') {
     return (
       <div
         className={cn('flex items-center justify-center bg-surface-hover text-muted', className)}
@@ -32,10 +29,10 @@ export function FileThumb({ path, className }: { path: string; className?: strin
     )
   }
 
-  if (isImage && !failed) {
+  if (kind === 'image' && !failed) {
     return (
       <img
-        src={`instadown-file://local/${encodeURIComponent(path)}`}
+        src={localFileUrl(path)}
         alt=""
         loading="lazy"
         decoding="async"

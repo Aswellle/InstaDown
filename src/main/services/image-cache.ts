@@ -1,10 +1,13 @@
 import { app, net, protocol } from 'electron'
 import { createHash } from 'node:crypto'
 import {
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readdirSync,
   readFileSync,
+  readSync,
   rmSync,
   statSync,
   writeFileSync
@@ -115,9 +118,10 @@ export function serveImageCache(): void {
     }
   })
 
-  // 本地已下载文件的缩略图（下载历史用）。
+  // 本地已下载文件的缩略图与"应用内查看"（下载历史用）。
   // URL 形如 instadown-file://local/<encoded abs path>；仅放行存在且扩展名
   // 可渲染的文件，避免成为任意文件读取通道。
+  // 支持 Range：应用内 <video> 播放/拖动进度条依赖 206 响应，否则只能从头播。
   protocol.handle(FILE_SCHEME, async (request) => {
     try {
       const u = new URL(request.url)
@@ -128,11 +132,42 @@ export function serveImageCache(): void {
         return new Response('bad path', { status: 400 })
       }
       if (!existsSync(path)) return new Response('not found', { status: 404 })
-      const buf = readFileSync(path)
       const ext = (path.split('.').pop() ?? 'jpg').toLowerCase()
+      const mime = mimeFromExt(ext)
+      const size = statSync(path).size
+
+      const range = request.headers.get('range')
+      const m = range ? /^bytes=(\d*)-(\d*)$/.exec(range.trim()) : null
+      if (m && (m[1] || m[2])) {
+        const start = m[1] ? parseInt(m[1], 10) : Math.max(0, size - parseInt(m[2], 10))
+        const end = m[1] && m[2] ? Math.min(parseInt(m[2], 10), size - 1) : size - 1
+        if (Number.isNaN(start) || start > end || start >= size) {
+          return new Response(null, { status: 416, headers: { 'content-range': `bytes */${size}` } })
+        }
+        // 只读请求区间：视频拖动进度条会高频发 Range，整文件读取在大文件上不可接受
+        const len = end - start + 1
+        const chunk = Buffer.alloc(len)
+        const fd = openSync(path, 'r')
+        try {
+          readSync(fd, chunk, 0, len, start)
+        } finally {
+          closeSync(fd)
+        }
+        return new Response(new Uint8Array(chunk), {
+          status: 206,
+          headers: {
+            'content-type': mime,
+            'accept-ranges': 'bytes',
+            'content-range': `bytes ${start}-${end}/${size}`,
+            'content-length': String(len)
+          }
+        })
+      }
+
+      const buf = readFileSync(path)
       return new Response(new Uint8Array(buf), {
         status: 200,
-        headers: { 'content-type': mimeFromExt(ext) }
+        headers: { 'content-type': mime, 'accept-ranges': 'bytes' }
       })
     } catch {
       return new Response('read failed', { status: 500 })

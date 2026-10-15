@@ -44,6 +44,11 @@ async function resolveSrc(url: string): Promise<string | null> {
   return p
 }
 
+/** 已是本地协议（缓存图片 / 本地文件）的地址无需再经主进程解析 */
+function isLocalScheme(url: string): boolean {
+  return url.startsWith('instadown-img://') || url.startsWith('instadown-file://')
+}
+
 export function SmartImage({
   src,
   alt = '',
@@ -63,7 +68,7 @@ export function SmartImage({
   const [current, setCurrent] = useState<string | null>(() => {
     if (!src) return null
     // 已解析过（含本地协议）直接使用，避免闪一下远端链接
-    return resolved.get(src) ?? (src.startsWith('instadown-img://') ? src : null)
+    return resolved.get(src) ?? (isLocalScheme(src) ? src : null)
   })
 
   useEffect(() => {
@@ -72,7 +77,7 @@ export function SmartImage({
       setCurrent(null)
       return
     }
-    if (src.startsWith('instadown-img://')) {
+    if (isLocalScheme(src)) {
       setCurrent(src)
       return
     }

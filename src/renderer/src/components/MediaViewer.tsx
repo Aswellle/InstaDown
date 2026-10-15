@@ -14,17 +14,22 @@ import { formatDate, formatDuration } from '@/lib/utils'
  *
  * 快捷键（页脚有可见提示，不要求用户记忆）：
  * ← → 翻页 · Enter 下载当前 · Esc 关闭
+ *
+ * hideDownload：查看"已下载到本机"的媒体（下载历史）时使用 ——
+ * 文件已在磁盘上，下载动作无意义，隐藏按钮与 Enter 提示。
  */
 export function MediaViewer({
   items,
   initialIndex,
   onClose,
-  onDownload
+  onDownload,
+  hideDownload = false
 }: {
   items: MediaItem[]
   initialIndex: number
   onClose: () => void
   onDownload: (item: MediaItem) => void
+  hideDownload?: boolean
 }) {
   const [index, setIndex] = useState(initialIndex)
   const [showKeys, setShowKeys] = useState(false)
@@ -42,14 +47,14 @@ export function MediaViewer({
       if ((e.target as HTMLElement)?.tagName === 'VIDEO') return
       if (e.key === 'ArrowLeft') goPrev()
       else if (e.key === 'ArrowRight') goNext()
-      else if (e.key === 'Enter') {
+      else if (e.key === 'Enter' && !hideDownload) {
         e.preventDefault()
         onDownload(item)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [item, goPrev, goNext, onDownload])
+  }, [item, goPrev, goNext, onDownload, hideDownload])
 
   return (
     <Dialog open={!!item} onClose={onClose} wide>
@@ -114,17 +119,21 @@ export function MediaViewer({
               {/* 快捷键提示：隐藏操作的可见化（悬停展开完整说明） */}
               <span
                 className="group/keys relative flex cursor-default items-center gap-1 text-subtle"
-                title="← → 翻页 · Enter 下载 · Esc 关闭"
+                title={hideDownload ? '← → 翻页 · Esc 关闭' : '← → 翻页 · Enter 下载 · Esc 关闭'}
               >
                 <Keyboard className="h-3.5 w-3.5 cursor-pointer" onClick={() => setShowKeys((v) => !v)} />
               </span>
               {showKeys && (
-                <span className="text-[11px] text-subtle">← → 翻页 · Enter 下载 · Esc 关闭</span>
+                <span className="text-[11px] text-subtle">
+                  {hideDownload ? '← → 翻页 · Esc 关闭' : '← → 翻页 · Enter 下载 · Esc 关闭'}
+                </span>
               )}
             </div>
-            <Button variant="primary" size="sm" onClick={() => onDownload(item)}>
-              <Download className="h-4 w-4" /> 下载此媒体
-            </Button>
+            {!hideDownload && (
+              <Button variant="primary" size="sm" onClick={() => onDownload(item)}>
+                <Download className="h-4 w-4" /> 下载此媒体
+              </Button>
+            )}
           </div>
         </motion.div>
       )}

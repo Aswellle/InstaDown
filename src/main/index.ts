@@ -8,6 +8,7 @@ import { TaskManager } from './services/queue'
 import { netTransport } from './services/net-transport'
 import { registerIpc } from './ipc'
 import { registerImageScheme, serveImageCache } from './services/image-cache'
+import { themeColorsFor } from '@shared/theme'
 
 /**
  * 主进程入口：窗口生命周期 + 服务装配（docs/02、03）。
@@ -83,12 +84,14 @@ async function bootstrap(): Promise<void> {
   })
 }
 
-/** 按设置解析初始主题（避免深色偏好下启动瞬间白闪，或反之） */
+/** 按设置解析初始主题（避免深色偏好下启动瞬间白闪，或反之）。
+ *  themeSource 与配色同源解析：'system' 交给系统，light/dark 钉死 ——
+ *  Windows 的窗口控制按钮（WCO）深浅色由 nativeTheme 驱动，只设
+ *  titleBarOverlay 颜色会出现"渲染层已黑、控制区仍白"的不同步。 */
 function initialThemeColors(settings: SettingsService): { bg: string; symbol: string } {
   const theme = settings.get().theme
-  const dark =
-    theme === 'dark' || (theme === 'system' && nativeTheme.shouldUseDarkColors)
-  return dark ? { bg: '#09090b', symbol: '#a1a1aa' } : { bg: '#ffffff', symbol: '#52525b' }
+  nativeTheme.themeSource = theme === 'dark' || theme === 'light' ? theme : 'system'
+  return themeColorsFor(nativeTheme.shouldUseDarkColors)
 }
 
 function createWindow(settings: SettingsService): void {

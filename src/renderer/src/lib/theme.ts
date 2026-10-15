@@ -29,18 +29,26 @@ export function useApplyTheme(): void {
     const root = document.documentElement
     const mql = window.matchMedia(SYSTEM_DARK_QUERY)
 
-    const apply = () => {
-      const dark = resolveIsDark(theme)
+    const apply = (override?: boolean) => {
+      const dark = override ?? resolveIsDark(theme)
       root.classList.toggle('dark', dark)
       root.style.colorScheme = dark ? 'dark' : 'light'
     }
     apply()
 
-    if (theme !== 'system') return
+    // 主进程广播的权威值：'system' → light/dark 切换时，themeSource 变化
+    // 会更新渲染层的 prefers-color-scheme，但 Electron 不派发 change 事件，
+    // 且切换瞬间本地读取的还是旧值（界面会卡在旧主题）。以广播为准修正。
+    const offNative = window.instadown.onNativeTheme((dark) => apply(dark))
+
+    if (theme !== 'system') return offNative
     // 系统主题变化时实时跟随
     const onChange = () => apply()
     mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
+    return () => {
+      mql.removeEventListener('change', onChange)
+      offNative()
+    }
   }, [theme])
 }
 
@@ -54,18 +62,18 @@ export function useIsDark(): boolean {
 
   useEffect(() => {
     setIsDark(resolveIsDark(theme))
-    if (theme !== 'system') return
+    // 主进程广播兜底：themeSource 切换不派发 matchMedia change 事件，
+    // 渲染层需以权威值修正（详见 useApplyTheme 注释）
+    const offNative = window.instadown.onNativeTheme((dark) => setIsDark(dark))
+    if (theme !== 'system') return offNative
     const mql = window.matchMedia(SYSTEM_DARK_QUERY)
     const onChange = () => setIsDark(systemPrefersDark())
     mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
+    return () => {
+      mql.removeEventListener('change', onChange)
+      offNative()
+    }
   }, [theme])
 
   return isDark
 }
-
-/** 供主进程/渲染进程共享的主题颜色常量（窗口控制面板、原生窗口底色） */
-export const THEME_COLORS = {
-  light: { bg: '#ffffff', symbol: '#52525b' },
-  dark: { bg: '#09090b', symbol: '#a1a1aa' }
-} as const
