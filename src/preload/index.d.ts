@@ -1,0 +1,94 @@
+import type {
+  AppError,
+  AppSettings,
+  HistoryRow,
+  MediaItem,
+  MediaRow,
+  ProfileMediaPage,
+  ProfileUser,
+  TaskSnapshot
+} from '@shared/types'
+
+/** window.instadown 类型声明（与 src/preload/index.ts 保持一致） */
+
+export interface ParseResult {
+  kind: 'collection'
+  collection: { source: { kind: 'post' | 'story'; shortcode?: string; username?: string }; author: { username: string; full_name?: string; avatar?: string }; items: MediaItem[]; caption?: string }
+}
+export interface ParseProfileResult {
+  kind: 'profile'
+  user: ProfileUser
+}
+export interface ParseError {
+  error: AppError
+}
+
+export interface DownloadItemInput {
+  id: string
+  type: 'image' | 'video'
+  url: string
+  thumbUrl?: string | null
+  author: string
+  shortcode: string
+  indexNo: number
+  takenAt?: number | null
+  width?: number | null
+  height?: number | null
+  duration?: number | null
+}
+
+export interface TaskEventMsg {
+  kind: 'progress' | 'status' | 'created' | 'removed'
+  id: string
+  progress?: number
+  speed?: number
+  downloaded?: number
+  total?: number
+  status?: TaskSnapshot['status']
+  error?: string | null
+  destPath?: string
+}
+
+declare global {
+  interface Window {
+    instadown: {
+      parseUrl(url: string): Promise<ParseResult | ParseProfileResult | ParseError>
+      searchUser(username: string): Promise<{ user: ProfileUser } | ParseError>
+      getUserMedia(username: string, maxId?: string): Promise<ProfileMediaPage | ParseError>
+      addDownload(items: DownloadItemInput[]): Promise<{ taskIds: string[] }>
+      getTasks(): Promise<TaskSnapshot[]>
+      pauseTask(id: string): Promise<void>
+      resumeTask(id: string): Promise<void>
+      cancelTask(id: string): Promise<void>
+      retryTask(id: string): Promise<void>
+      removeTask(id: string): Promise<void>
+      getHistory(): Promise<HistoryRow[]>
+      getLibrary(author?: string): Promise<MediaRow[]>
+      /** 批量缓存图片到本地；返回 原始URL → 本地协议URL 的映射 */
+      cacheImages(urls: string[]): Promise<Record<string, string>>
+      getImageCacheStats(): Promise<{ files: number; bytes: number }>
+      clearImageCache(): Promise<number>
+      getSettings(): Promise<AppSettings>
+      setSettings(patch: Partial<AppSettings>): Promise<AppSettings>
+      chooseDirectory(): Promise<string | null>
+      setSessionCookie(value: string | null): Promise<void>
+      hasSessionCookie(): Promise<boolean>
+      igLogin(): Promise<{ ok: boolean; hasSession?: boolean; username?: string | null; avatar?: string | null; cancelled?: boolean; message?: string }>
+      igResetAndLogin(): Promise<{ ok: boolean; hasSession?: boolean; username?: string | null; avatar?: string | null; cancelled?: boolean; message?: string }>
+      igLogout(): Promise<void>
+      igLoginStatus(): Promise<{ persisted: boolean; partition: boolean; profile: { username: string; avatar: string } | null }>
+      setNativeTheme(mode: 'light' | 'dark'): Promise<void>
+      readClipboard(): Promise<string>
+      revealFile(path: string): Promise<void>
+      clearHistory(): Promise<void>
+      openFile(path: string): Promise<void>
+      openDownloadDir(): Promise<string | null>
+      openExternal(url: string): Promise<void>
+      notifyDownloadComplete(filename: string, destPath: string): void
+      onTaskEvent(cb: (ev: TaskEventMsg) => void): () => void
+      onWorkerStatus(cb: (status: 'ready' | 'down') => void): () => void
+    }
+  }
+}
+
+export {}

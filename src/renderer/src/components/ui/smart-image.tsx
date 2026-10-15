@@ -1,0 +1,127 @@
+import { useEffect, useState } from 'react'
+import { ImageOff } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+/**
+ * 容错图片：加载失败（CDN 链接过期 / 网络中断 / 已删除）时显示占位符，
+ * 而不是浏览器默认的破图图标。
+ *
+ * 为什么必须走本地缓存：Instagram 的 CDN 链接带签名与过期时间（`oe=` 参数），
+ * 几小时后必然失效。若直接引用远端 URL，用户把窗口放着不动一段时间回来，
+ * 头像与缩略图就会整片变成占位符（"图片不显示 / 未加载完整"）。
+ * 这里先请求主进程把图片缓存到本地磁盘，再用 `instadown-img://` 读取，
+ * 因此链接过期后仍能正常显示。
+ *
+ * 缓存失败时回退到原始 URL（至少当下能显示），彻底失败才显示占位符。
+ */
+
+/** 进程内缓存：同一 URL 在多个组件间共享解析结果，避免重复请求主进程 */
+const resolved = new Map<string, string>()
+const inflight = new Map<string, Promise<string | null>>()
+
+async function resolveSrc(url: string): Promise<string | null> {
+  const hit = resolved.get(url)
+  if (hit) return hit
+  const pending = inflight.get(url)
+  if (pending) return pending
+
+  const p = window.instadown
+    .cacheImages([url])
+    .then((map) => {
+      const local = map[url]
+      if (local) {
+        resolved.set(url, local)
+        return local
+      }
+      // 主进程未能缓存：回退到远端 URL
+      resolved.set(url, url)
+      return url
+    })
+    .catch(() => null)
+    .finally(() => inflight.delete(url))
+
+  inflight.set(url, p)
+  return p
+}
+
+export function SmartImage({
+  src,
+  alt = '',
+  className,
+  fallbackClassName,
+  loading = 'lazy',
+  draggable = false
+}: {
+  src?: string | null
+  alt?: string
+  className?: string
+  fallbackClassName?: string
+  loading?: 'lazy' | 'eager'
+  draggable?: boolean
+}) {
+  const [failed, setFailed] = useState(false)
+  const [current, setCurrent] = useState<string | null>(() => {
+    if (!src) return null
+    // 已解析过（含本地协议）直接使用，避免闪一下远端链接
+    return resolved.get(src) ?? (src.startsWith('instadown-img://') ? src : null)
+  })
+
+  useEffect(() => {
+    setFailed(false)
+    if (!src) {
+      setCurrent(null)
+      return
+    }
+    if (src.startsWith('instadown-img://')) {
+      setCurrent(src)
+      return
+    }
+    const cached = resolved.get(src)
+    if (cached) {
+      setCurrent(cached)
+      return
+    }
+    let alive = true
+    setCurrent(null)
+    void resolveSrc(src).then((next) => {
+      if (alive && next) setCurrent(next)
+    })
+    return () => {
+      alive = false
+    }
+  }, [src])
+
+  if (!src || failed) {
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-center bg-surface-hover text-subtle',
+          className,
+          fallbackClassName
+        )}
+        title={failed ? '媒体链接已失效（Instagram CDN 链接会过期）' : undefined}
+      >
+        <ImageOff className="h-5 w-5" />
+      </div>
+    )
+  }
+
+  // 解析中：占位保持布局稳定（避免图片出现时跳动）
+  if (!current) {
+    return (
+      <div className={cn('animate-pulse bg-surface-hover', className, fallbackClassName)} />
+    )
+  }
+
+  return (
+    <img
+      src={current}
+      alt={alt}
+      loading={loading}
+      decoding="async"
+      draggable={draggable}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  )
+}

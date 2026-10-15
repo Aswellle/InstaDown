@@ -1,0 +1,31 @@
+# 依赖与构建产物
+node_modules/
+out/
+release/
+dist/
+dist-e/
+
+# Python
+__pycache__/
+*.pyc
+
+# TS 增量构建信息
+*.tsbuildinfo
+
+# 日志与系统文件
+*.log
+.DS_Store
+Thumbs.db
+
+# 本地环境与敏感数据（绝不入库）
+.env
+.env.*
+*.local
+session.bin
+*.db
+*.db-shm
+*.db-wal
+
+# 编辑器
+.vscode/
+.idea/

@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/*
+ * 主题系统：语义化 CSS 变量 + .dark 类切换。
+ * 默认浅色；深色由 <html class="dark"> 启用；"跟随系统" 由 JS 解析后同样落到 .dark。
+ * 组件一律使用下方语义类（surface/text/border 等），不要写死 zinc-* 色阶，
+ * 否则切换主题时不会跟随。
+ */
+@layer base {
+  :root {
+    --c-bg: #ffffff;
+    --c-bg-subtle: #f7f7f8;
+    --c-surface: #ffffff;
+    --c-surface-hover: #f4f4f5;
+    --c-surface-active: #e9e9eb;
+    --c-border: #e4e4e7;
+    --c-border-strong: #d4d4d8;
+    --c-text: #18181b;
+    --c-text-muted: #52525b;
+    --c-text-subtle: #71717a;
+    --c-overlay: rgb(0 0 0 / 0.4);
+    --c-scrollbar: rgb(24 24 27 / 0.2);
+    --c-scrollbar-hover: rgb(24 24 27 / 0.35);
+  }
+
+  .dark {
+    --c-bg: #09090b;
+    --c-bg-subtle: #101013;
+    --c-surface: #18181b;
+    --c-surface-hover: #27272a;
+    --c-surface-active: #3f3f46;
+    --c-border: #27272a;
+    --c-border-strong: #3f3f46;
+    --c-text: #f4f4f5;
+    --c-text-muted: #a1a1aa;
+    --c-text-subtle: #71717a;
+    --c-overlay: rgb(0 0 0 / 0.6);
+    --c-scrollbar: rgb(161 161 170 / 0.22);
+    --c-scrollbar-hover: rgb(161 161 170 / 0.4);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background-color: var(--c-bg);
+    color: var(--c-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--c-scrollbar);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--c-scrollbar-hover);
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* 语义工具类（供组件使用，随主题变化） */
+@utility bg-app {
+  background-color: var(--c-bg);
+}
+@utility bg-app-subtle {
+  background-color: var(--c-bg-subtle);
+}
+@utility bg-surface {
+  background-color: var(--c-surface);
+}
+@utility bg-surface-hover {
+  background-color: var(--c-surface-hover);
+}
+@utility bg-surface-active {
+  background-color: var(--c-surface-active);
+}
+@utility text-app {
+  color: var(--c-text);
+}
+@utility text-muted {
+  color: var(--c-text-muted);
+}
+@utility text-subtle {
+  color: var(--c-text-subtle);
+}
+@utility border-app {
+  border-color: var(--c-border);
+}
+@utility border-app-strong {
+  border-color: var(--c-border-strong);
+}
+@utility bg-overlay {
+  background-color: var(--c-overlay);
+}
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/*
+ * 标题栏安全区：Electron 的 titleBarOverlay 会注入 env(titlebar-area-*)，
+ * 描述**原生窗口控制按钮（最小化/最大化/关闭）之外**的可用区域。
+ * 顶栏内容必须约束在 titlebar-area-width 内，否则右侧控件（如设置按钮）
+ * 会被原生按钮盖住 —— 视觉上看不见、也点不到。
+ * 未启用 overlay 的平台（macOS hiddenInset / 无 overlay）env() 回退到 100%，
+ * 行为不变。
+ */
+.titlebar-safe {
+  width: env(titlebar-area-width, 100%);
+  max-width: 100%;
+}
+.titlebar-inset-right {
+  padding-right: env(titlebar-area-x, 0px);
+}

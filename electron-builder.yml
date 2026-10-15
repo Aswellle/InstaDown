@@ -1,0 +1,36 @@
+appId: com.instadownloader.app
+productName: InstaDownloader
+directories:
+  output: release/${version}
+  buildResources: build
+files:
+  - out/**
+asar: true
+extraResources:
+  - from: worker
+    to: worker
+    filter:
+      - "**/*.py"
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+mac:
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.utilities
+linux:
+  icon: build/icon.png
+  target: AppImage
+  category: Utility
+publish:
+  provider: github

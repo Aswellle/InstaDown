@@ -1,0 +1,174 @@
+import type { DB } from './database'
+
+export interface TaskRow {
+  id: string
+  media_id: string | null
+  url: string
+  author: string | null
+  type: string | null
+  shortcode: string | null
+  index_no: number | null
+  status: 'WAITING' | 'DOWNLOADING' | 'PAUSED' | 'SUCCESS' | 'FAILED' | 'CANCELED'
+  progress: number
+  speed: number
+  downloaded: number
+  total: number
+  dest_path: string | null
+  error: string | null
+  created_at: number
+  updated_at: number
+}
+
+export interface MediaRow {
+  id: string
+  platform: string
+  shortcode: string | null
+  author: string | null
+  url: string
+  thumb_url: string | null
+  type: 'image' | 'video'
+  width: number | null
+  height: number | null
+  duration: number | null
+  caption: string | null
+  taken_at: number | null
+  created_at: number
+}
+
+export interface HistoryRow {
+  id: number
+  task_id: string | null
+  media_id: string | null
+  author: string | null
+  path: string
+  size: number
+  created_at: number
+}
+
+export class Repos {
+  constructor(private db: DB) {}
+
+  // ------------------------------------------------------------------ media
+  upsertMedia(m: MediaRow): void {
+    this.db
+      .prepare(
+        `INSERT INTO media (id, platform, shortcode, author, url, thumb_url, type, width, height, duration, caption, taken_at, created_at)
+         VALUES (?, 'instagram', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           shortcode=excluded.shortcode, author=excluded.author,
+           url=excluded.url, thumb_url=excluded.thumb_url, type=excluded.type,
+           width=excluded.width, height=excluded.height, duration=excluded.duration,
+           caption=excluded.caption, taken_at=excluded.taken_at`
+      )
+      .run(
+        m.id, m.shortcode ?? null, m.author ?? null, m.url, m.thumb_url ?? null,
+        m.type, m.width ?? null, m.height ?? null, m.duration ?? null,
+        m.caption ?? null, m.taken_at ?? null, m.created_at
+      )
+  }
+
+  getMediaByAuthor(author: string, limit = 200): MediaRow[] {
+    return this.db
+      .prepare('SELECT * FROM media WHERE author = ? ORDER BY taken_at DESC, created_at DESC LIMIT ?')
+      .all(author, limit) as unknown as MediaRow[]
+  }
+
+  /** 媒体库全量（不按作者过滤） */
+  listMedia(limit = 500): MediaRow[] {
+    return this.db
+      .prepare('SELECT * FROM media ORDER BY created_at DESC LIMIT ?')
+      .all(limit) as unknown as MediaRow[]
+  }
+
+  // ------------------------------------------------------------------ tasks
+  insertTask(t: TaskRow): void {
+    this.db
+      .prepare(
+        `INSERT INTO tasks (id, media_id, url, author, type, shortcode, index_no, status, progress, speed, downloaded, total, dest_path, error, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        t.id, t.media_id ?? null, t.url, t.author ?? null, t.type ?? null, t.shortcode ?? null,
+        t.index_no ?? null, t.status, t.progress, t.speed, t.downloaded, t.total,
+        t.dest_path ?? null, t.error ?? null, t.created_at, t.updated_at
+      )
+  }
+
+  updateTask(id: string, patch: Partial<TaskRow>): void {
+    const cols: string[] = []
+    const vals: Array<string | number | null> = []
+    for (const [k, v] of Object.entries(patch)) {
+      cols.push(`${k} = ?`)
+      vals.push(v ?? null)
+    }
+    if (cols.length === 0) return
+    cols.push('updated_at = ?')
+    vals.push(Date.now(), id)
+    this.db.prepare(`UPDATE tasks SET ${cols.join(', ')} WHERE id = ?`).run(...vals)
+  }
+
+  getTask(id: string): TaskRow | null {
+    const row = this.db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)
+    return (row as TaskRow | undefined) ?? null
+  }
+
+  listTasks(limit = 200): TaskRow[] {
+    return this.db
+      .prepare('SELECT * FROM tasks ORDER BY created_at DESC LIMIT ?')
+      .all(limit) as unknown as TaskRow[]
+  }
+
+  /** 启动恢复：DOWNLOADING/WAITING -> WAITING，PAUSED 保留 */
+  listResumable(): TaskRow[] {
+    return this.db
+      .prepare(
+        `SELECT * FROM tasks WHERE status IN ('WAITING','DOWNLOADING','PAUSED') ORDER BY created_at ASC`
+      )
+      .all() as unknown as TaskRow[]
+  }
+
+  resetDownloadingToWaiting(): void {
+    this.db
+      .prepare(`UPDATE tasks SET status = 'WAITING', speed = 0 WHERE status = 'DOWNLOADING'`)
+      .run()
+  }
+
+  deleteTask(id: string): void {
+    this.db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+  }
+
+  // ---------------------------------------------------------------- history
+  insertHistory(h: Omit<HistoryRow, 'id'>): void {
+    this.db
+      .prepare(
+        'INSERT INTO history (task_id, media_id, author, path, size, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+      )
+      .run(h.task_id ?? null, h.media_id ?? null, h.author ?? null, h.path, h.size, h.created_at)
+  }
+
+  listHistory(limit = 500): HistoryRow[] {
+    return this.db
+      .prepare('SELECT * FROM history ORDER BY created_at DESC LIMIT ?')
+      .all(limit) as unknown as HistoryRow[]
+  }
+
+  clearHistory(): void {
+    this.db.prepare('DELETE FROM history').run()
+  }
+
+  // --------------------------------------------------------------- settings
+  getSetting(key: string): string | null {
+    const row = this.db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+      | { value: string }
+      | undefined
+    return row?.value ?? null
+  }
+
+  setSetting(key: string, value: string): void {
+    this.db
+      .prepare(
+        'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+      )
+      .run(key, value)
+  }
+}
