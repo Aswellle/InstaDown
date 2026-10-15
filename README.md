@@ -206,10 +206,6 @@ cd InstaDown && npm install && npm run dev
 如果这个项目对你有用，欢迎点一个 ⭐ Star —— 这是对独立开发者最实在的鼓励，
 也能让更多需要它的人看到。
 
-## 文档
-
-需求与设计规范见 [`docs/`](docs/)（14 篇权威规范），开发过程产物见
-[`docs/dev/`](docs/dev/)（参考产品分析、技术设计、修复报告）。
 
 ## License
 
