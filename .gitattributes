@@ -1,0 +1,11 @@
+# 统一换行：仓库内一律 LF，Windows 检出为 LF（Electron/Vite 均可处理）
+* text=auto eol=lf
+
+# Windows 脚本保持 CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制
+*.png binary
+*.ico binary
+*.icns binary
