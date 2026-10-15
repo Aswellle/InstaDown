@@ -65,6 +65,7 @@ InstaDownloader 的答案是三个设计承诺：
 </div>
 
 - 图片/视频查看器：左右翻页、`Enter` 下载、悬停显示快捷键
+- 下载历史直接读本地文件在应用内查看（含视频拖动进度条），不拉起系统看图器
 - 主页归档分页浏览：每次"再加载 10 条"，节奏可控
 
 **下载引擎**
@@ -90,7 +91,7 @@ InstaDownloader 的答案是三个设计承诺：
 </div>
 
 **桌面体验**
-- 浅色 / 深色 / 跟随系统三态主题（浅色默认）
+- 浅色 / 深色 / 跟随系统三态主题（浅色默认），Windows 窗口控制按钮区同步跟随
 - 剪贴板智能分类检测：帖子链接、主页链接、用户名各有差异化提示
 - 破坏性操作（清空历史/缓存、退出登录）全部二次确认
 
@@ -144,7 +145,7 @@ npm run dist:dir     # 打包（目录级，验证用）
 npm run dist         # 打包发布版（win nsis / mac dmg / linux AppImage）
 ```
 
-要求：**Node ≥ 20、Python ≥ 3.11**（worker 零 pip 依赖）。环境变量 `INSTADOWN_PYTHON` 可指定解释器。
+要求：**Node ≥ 22、Python ≥ 3.11**（worker 零 pip 依赖）。环境变量 `INSTADOWN_PYTHON` 可指定解释器。
 
 测试覆盖：队列状态机、断点续传、URL 分类、多图回退、会话分级、selector 稳定性等 **100 个用例**（Vitest 53 + unittest 47）。
 
@@ -196,11 +197,14 @@ Instagram 官方登录窗口完成登录（凭据直接提交给 Instagram，本
 不接受增加批量采集、绕过限流、绕过登录墙能力的改动。
 
 ```bash
-git clone https://github.com/instadownloader/InstaDownloader.git
-cd InstaDownloader && npm install && npm run dev
+git clone https://github.com/Aswellle/InstaDown.git
+cd InstaDown && npm install && npm run dev
 ```
 
 提交前请确保 `npm test`、`npm run test:py`、`npm run typecheck` 全部通过。
+
+如果这个项目对你有用，欢迎点一个 ⭐ Star —— 这是对独立开发者最实在的鼓励，
+也能让更多需要它的人看到。
 
 ## 文档
 

@@ -81,6 +81,8 @@ declare global {
       setNativeTheme(mode: 'light' | 'dark' | 'system'): Promise<void>
       /** 主进程权威深色值广播（themeSource 切换不触发 matchMedia change 事件） */
       onNativeTheme(cb: (dark: boolean) => void): () => void
+      /** 应用版本号（设置 → 关于） */
+      getAppVersion(): Promise<string>
       readClipboard(): Promise<string>
       revealFile(path: string): Promise<void>
       clearHistory(): Promise<void>

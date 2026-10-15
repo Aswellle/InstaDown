@@ -1,5 +1,5 @@
-import { BrowserWindow, dialog, ipcMain, clipboard, shell, Notification, nativeTheme } from 'electron'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { BrowserWindow, app, dialog, ipcMain, clipboard, shell, Notification, nativeTheme } from 'electron'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isProbablyIgUrl, classifyIgUrl } from '@shared/ig-url'
 import { themeColorsFor } from '@shared/theme'
@@ -463,6 +463,22 @@ export function registerIpc(deps: IpcDeps): void {
   // 'system' 模式下系统主题变化：原生控件（含 Windows 窗口控制按钮）自行刷新。
   // 渲染层的 prefers-color-scheme 由 Chromium 同步更新，useApplyTheme 会跟随。
   nativeTheme.on('updated', applyNativeTheme)
+
+  // 应用版本（设置 → 关于 展示）。
+  // 不能只用 app.getVersion()：未打包运行（electron.exe out/main/index.js）时
+  // 它回退到 Electron 自身版本（实测显示 v44.7.0 而非 v0.2.0）。项目
+  // package.json 在开发态位于 APP_ROOT，打包后在 asar 根（fs 对 asar 透明），
+  // 两种情形都能读到真实版本。
+  handle('app:version', () => {
+    try {
+      const root = process.env.APP_ROOT ?? __dirname
+      const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { version?: string }
+      if (pkg.version) return String(pkg.version)
+    } catch {
+      /* 回退到 Electron 报告的版本 */
+    }
+    return app.getVersion()
+  })
 
   // ------------------------------------------------- Instagram 登录窗口
   // 清除分区后重新登录（用于会话失效/残留时从干净状态开始）

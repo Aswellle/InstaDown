@@ -51,6 +51,8 @@ const api = {
     ipcRenderer.on('theme:native', listener)
     return () => ipcRenderer.removeListener('theme:native', listener)
   },
+  /** 应用版本号（设置 → 关于） */
+  getAppVersion: () => ipcRenderer.invoke('app:version'),
 
   readClipboard: () => ipcRenderer.invoke('clipboard:readText'),
   revealFile: (path: string) => ipcRenderer.invoke('file:reveal', path),

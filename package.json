@@ -45,10 +45,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/instadownloader/InstaDownloader.git"
+    "url": "git+https://github.com/Aswellle/InstaDown.git"
   },
-  "homepage": "https://github.com/instadownloader/InstaDownloader#readme",
+  "homepage": "https://github.com/Aswellle/InstaDown#readme",
   "bugs": {
-    "url": "https://github.com/instadownloader/InstaDownloader/issues"
+    "url": "https://github.com/Aswellle/InstaDown/issues"
   }
 }

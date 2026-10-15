@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Aperture, ClipboardPaste, LogIn, Search } from 'lucide-react'
 import { Button } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
+import { GithubIcon } from '@/components/ui/github-icon'
 import { useIgAccountStore } from '@/stores/ig-account'
 import { isProbablyIgUrl } from '@shared/ig-url'
+import { GITHUB_REPO_URL } from '@shared/repo'
 
 /** 顶部：Logo + URL 输入（粘贴快捷键）+ 解析 + 账号入口（docs/09） */
 export function TopBar({
@@ -77,6 +79,23 @@ export function TopBar({
       <div className="flex items-center gap-2 pl-1">
         <Aperture className="h-5 w-5 text-rose-500" />
         <span className="text-sm font-semibold tracking-wide text-app">InstaDownloader</span>
+        {/* 开源入口：章鱼猫图标 + Star 请求（悬停提示）。
+            放在品牌名旁而不是角落 —— 它既是"项目从哪来"的标识，
+            也是给用户的第一个 star 触点。 */}
+        <a
+          href={GITHUB_REPO_URL}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => {
+            e.preventDefault()
+            void window.instadown.openExternal(GITHUB_REPO_URL)
+          }}
+          className="no-drag ml-0.5 flex items-center gap-1 rounded-md px-1.5 py-1 text-muted transition-colors hover:bg-surface-hover hover:text-app"
+          title="在 GitHub 上 Star 这个项目 ⭐"
+        >
+          <GithubIcon className="h-4 w-4" />
+          <span className="hidden text-xs sm:inline">Star</span>
+        </a>
       </div>
 
       <div className="no-drag mx-auto flex w-full max-w-2xl items-center gap-2">

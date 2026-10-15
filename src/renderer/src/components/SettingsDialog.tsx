@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  Aperture,
   ChevronDown,
   Database,
   Download,
@@ -11,6 +12,7 @@ import {
   Moon,
   Palette,
   ShieldCheck,
+  Star,
   Sun,
   Trash2,
   UserRound,
@@ -20,10 +22,12 @@ import { toast } from 'sonner'
 import type { ThemeMode } from '@shared/types'
 import { Dialog } from '@/components/ui/dialog'
 import { Button, Input } from '@/components/ui/primitives'
+import { GithubIcon } from '@/components/ui/github-icon'
 import { useSettingsStore } from '@/stores/settings'
 import { useIgAccountStore } from '@/stores/ig-account'
 import { SmartImage } from '@/components/ui/smart-image'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { GITHUB_REPO_LABEL, GITHUB_REPO_URL } from '@shared/repo'
 import { cn, formatBytes } from '@/lib/utils'
 
 const THEME_OPTIONS: Array<{ value: ThemeMode; label: string; icon: typeof Sun }> = [
@@ -60,6 +64,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [cache, setCache] = useState<{ files: number; bytes: number } | null>(null)
   const [historyCount, setHistoryCount] = useState(0)
   const [confirm, setConfirm] = useState<'cache' | 'history' | 'logout' | null>(null)
+  const [version, setVersion] = useState('')
 
   useEffect(() => {
     if (!open || !settings) return
@@ -70,6 +75,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     setWarnAccountUse(settings.warnAccountUse)
     setAutoCacheImages(settings.autoCacheImages)
     setTheme(settings.theme)
+    void window.instadown.getAppVersion().then(setVersion).catch(() => setVersion(''))
     void window.instadown.igLoginStatus().then((s) => {
       setHasSession(s.persisted)
       setProfile(s.profile ?? null)
@@ -385,7 +391,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               <span className="tabular-nums text-app">{historyCount} 条记录</span>
             </div>
             <p className="text-[11px] leading-relaxed text-subtle">
-              清空的是历史列表，**已下载到磁盘的文件不会被删除**。
+              清空的是历史列表，<span className="font-medium text-muted">已下载到磁盘的文件不会被删除</span>。
             </p>
             <Button
               variant="outline"
@@ -419,6 +425,39 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             </div>
           </Field>
         </AdvancedGroup>
+
+        {/* ───────────────────────── 关于 */}
+        <Group icon={Info} title="关于" desc="版本信息与开源仓库">
+          <div className="space-y-2 rounded-lg border border-app bg-surface-hover/30 p-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted">
+                <Aperture className="h-3.5 w-3.5 text-rose-500" /> InstaDownloader
+              </span>
+              <span className="tabular-nums text-app">{version ? `v${version}` : '—'}</span>
+            </div>
+
+            {/* 开源仓库入口：章鱼猫图标 + 地址 + star 请求 */}
+            <button
+              onClick={() => void window.instadown.openExternal(GITHUB_REPO_URL)}
+              className="flex w-full items-center gap-2 rounded-md border border-app bg-surface px-2.5 py-2 text-left transition-colors hover:bg-surface-hover"
+              title="在浏览器中打开开源仓库"
+            >
+              <GithubIcon className="h-4 w-4 shrink-0 text-app" />
+              <span className="min-w-0 flex-1 truncate text-xs font-medium text-app">
+                {GITHUB_REPO_LABEL}
+              </span>
+              <Star className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+            </button>
+
+            <p className="text-[11px] leading-relaxed text-subtle">
+              如果这个项目帮你留住了想收藏的内容，欢迎到 GitHub 给一个
+              <span className="mx-0.5 inline-flex items-center gap-0.5 text-amber-500">
+                <Star className="h-3 w-3" />Star
+              </span>
+              —— 这是对独立开发者最实在的鼓励，也能让更多人看到它。
+            </p>
+          </div>
+        </Group>
 
         <div className="flex items-center justify-end gap-2 border-t border-app pt-3">
           {saved && <span className="text-xs text-emerald-600 dark:text-emerald-400">已保存</span>}
