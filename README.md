@@ -39,12 +39,31 @@ InstaDownloader 的答案是三个设计承诺：
 
 ## 功能亮点
 
+<div align="center">
+  <img src="docs/img/light-grid.jpg" width="820" alt="解析结果网格" />
+  <p><sub>粘贴链接即得预览网格 —— 类型角标、分辨率与拍摄日期一目了然</sub></p>
+</div>
+
 **解析与预览**
 - 帖子 / Carousel 多图 / Reels / Stories / 用户主页，支持直接输入用户名
 - 多图帖子完整解析（老帖 contextJSON 缺失时自动走多层回退，不会"3 图只出 1 图"）
 - Apple Photos 式多选网格：单击选、Shift 连选、Ctrl 点选、全选
 
 **应用内闭环**（不跳系统浏览器）
+
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="docs/img/light-selection.jpg" alt="多选批量下载" /></td>
+      <td><img src="docs/img/light-viewer.jpg" alt="应用内查看器" /></td>
+    </tr>
+    <tr>
+      <td align="center"><sub>Shift 连选 + 悬浮批量操作栏</sub></td>
+      <td align="center"><sub>应用内查看器：翻页 / 元信息 / 一键下载</sub></td>
+    </tr>
+  </table>
+</div>
+
 - 图片/视频查看器：左右翻页、`Enter` 下载、悬停显示快捷键
 - 主页归档分页浏览：每次"再加载 10 条"，节奏可控
 
@@ -56,6 +75,19 @@ InstaDownloader 的答案是三个设计承诺：
 - 全屏媒体库：真实缩略图网格 + 作者/类型/关键字检索 + 四种排序 + 批量下载
 - 下载历史带缩略图，一眼认出每项是什么
 - 头像与缩略图本地缓存（自定义 `instadown-img://` 协议），链接过期不再是占位符
+
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="docs/img/light-library.jpg" alt="全屏媒体库（浅色）" /></td>
+      <td><img src="docs/img/dark-library.jpg" alt="全屏媒体库（深色）" /></td>
+    </tr>
+    <tr>
+      <td align="center"><sub>浅色主题</sub></td>
+      <td align="center"><sub>深色主题</sub></td>
+    </tr>
+  </table>
+</div>
 
 **桌面体验**
 - 浅色 / 深色 / 跟随系统三态主题（浅色默认）
