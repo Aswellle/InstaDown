@@ -29,3 +29,6 @@ session.bin
 # 编辑器
 .vscode/
 .idea/
+
+# 本地 agent 指南（仅本机使用，不随开源仓库发布）
+AGENTS.md
