@@ -40,7 +40,7 @@ InstaDownloader 的答案是三个设计承诺：
 ## 功能亮点
 
 <div align="center">
-  <img src="docs/img/light-grid.jpg" width="820" alt="解析结果网格" />
+  <img src="assets/screenshots/light-grid.jpg" width="820" alt="解析结果网格" />
   <p><sub>粘贴链接即得预览网格 —— 类型角标、分辨率与拍摄日期一目了然</sub></p>
 </div>
 
@@ -54,8 +54,8 @@ InstaDownloader 的答案是三个设计承诺：
 <div align="center">
   <table>
     <tr>
-      <td><img src="docs/img/light-selection.jpg" alt="多选批量下载" /></td>
-      <td><img src="docs/img/light-viewer.jpg" alt="应用内查看器" /></td>
+      <td><img src="assets/screenshots/light-selection.jpg" alt="多选批量下载" /></td>
+      <td><img src="assets/screenshots/light-viewer.jpg" alt="应用内查看器" /></td>
     </tr>
     <tr>
       <td align="center"><sub>Shift 连选 + 悬浮批量操作栏</sub></td>
@@ -80,8 +80,8 @@ InstaDownloader 的答案是三个设计承诺：
 <div align="center">
   <table>
     <tr>
-      <td><img src="docs/img/light-library.jpg" alt="全屏媒体库（浅色）" /></td>
-      <td><img src="docs/img/dark-library.jpg" alt="全屏媒体库（深色）" /></td>
+      <td><img src="assets/screenshots/light-library.jpg" alt="全屏媒体库（浅色）" /></td>
+      <td><img src="assets/screenshots/dark-library.jpg" alt="全屏媒体库（深色）" /></td>
     </tr>
     <tr>
       <td align="center"><sub>浅色主题</sub></td>

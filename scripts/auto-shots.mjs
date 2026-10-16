@@ -5,7 +5,7 @@
  *  1. 应用以 --remote-debugging-port=9224 运行（脚本可自动拉起）
  *  2. 媒体库已有下载数据（media 表非空）
  *
- * 产出：docs/img/*.png（浅色 + 深色两套）
+ * 产出：assets/screenshots/*.png（浅色 + 深色两套）
  *
  * 用法：node scripts/auto-shots.mjs
  */
@@ -15,7 +15,7 @@ import { join } from 'node:path'
 
 const PORT = 9224
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]):/, '$1:')
-const OUT_DIR = join(ROOT, 'docs', 'img')
+const OUT_DIR = join(ROOT, 'assets', 'screenshots')
 const EXE = join(ROOT, 'node_modules', 'electron', 'dist', 'electron.exe')
 const APP = join(ROOT, 'out', 'main', 'index.js')
 
