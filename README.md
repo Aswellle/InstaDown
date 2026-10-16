@@ -1,6 +1,5 @@
 <div align="center">
 
-[简体中文](README.md) | [English](README_EN.md)
 
 <img src="build/icon-256.png" width="120" alt="InstaDownloader logo" />
 
@@ -17,6 +16,8 @@
 *粘贴链接 → 预览多图 → 批量下载 → 永久归档。全程本地完成，无需登录。*
 
 [下载](#下载) · [功能亮点](#功能亮点) · [工作原理](#工作原理) · [参与贡献](#参与贡献)
+
+[简体中文](README.md) | [English](README_EN.md)
 
 </div>
 
