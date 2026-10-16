@@ -22,6 +22,11 @@ nsis:
   createDesktopShortcut: always
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
+  # 默认产物名含空格（"InstaDownloader Setup 0.2.0.exe"）。上传到 GitHub
+  # Release 时空格会被改写成点（InstaDownloader.Setup.0.2.0.exe），而
+  # latest.yml 里记录的仍是原名 —— 自动更新按 yml 找文件会 404。
+  # 显式去掉空格，让本地文件名、Release 资产名、latest.yml 三者一致。
+  artifactName: ${productName}-Setup-${version}.${ext}
 mac:
   icon: build/icon.png
   target:
