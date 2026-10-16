@@ -79,14 +79,15 @@ jobs:
           # 首次运行创建 Release（已存在则忽略）；随后把本平台产物挂上去
           gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
-          # 只挑最终产物：安装器 + 自动更新元数据。
-          # -maxdepth 2 = 仅 release/<version>/ 顶层，排除 *-unpacked/ 与 mac/ 目录
-          files=$(find release -maxdepth 2 -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.yml' \) ! -name 'builder-*.yml')
-          echo "uploading:"; echo "$files"
-          # 同名资产重复上传会报错：先删旧再传（重跑 tag 场景）
-          for f in $files; do
-            gh release delete-asset "$GITHUB_REF_NAME" "$(basename "$f")" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-          done
-          for f in $files; do
-            gh release upload "$GITHUB_REF_NAME" "$f" --repo "$GITHUB_REPOSITORY" --clobber
-          done
+          # 用 find -print0 | while read -d '' 逐条处理：Windows 安装器文件名带空格
+          # （"InstaDownloader Setup 0.2.0.exe"），未加引号的 $files 会被词分割成
+          # 三个参数，gh 对不存在的路径报 "no matches found"（实测 Windows 失败、
+          # macOS/Linux 因文件名无空格而通过）。管道内的 set -e 同样生效：
+          # 任一上传失败会让该子 shell 非零退出，pipefail 再把整步判为失败。
+          find release -maxdepth 2 -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.yml' \) ! -name 'builder-*.yml' -print0 |
+            while IFS= read -r -d '' f; do
+              echo "uploading: $f"
+              # 同名资产重复上传会报错：先删旧再传（重跑 tag 场景）
+              gh release delete-asset "$GITHUB_REF_NAME" "$(basename "$f")" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+              gh release upload "$GITHUB_REF_NAME" "$f" --repo "$GITHUB_REPOSITORY" --clobber
+            done
