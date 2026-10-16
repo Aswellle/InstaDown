@@ -34,3 +34,6 @@ linux:
   category: Utility
 publish:
   provider: github
+  # 默认 draft：需要人工到 GitHub 手动发布，CI 产物不会自动对外可见
+  # （表现为"工作流成功但 Release 页没有安装包"）。改为直接发布正式版。
+  releaseType: release
