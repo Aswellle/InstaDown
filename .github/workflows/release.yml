@@ -43,10 +43,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # 打包但不上传：发布交给下面的 gh release upload。
+      # 打包但不上传：发布交给下面的 action。
       # electron-builder 自带的 GitHub publisher 在 CI 上不产出任何资产
-      # （工作流显示成功、Release 页却没有任何安装包），改用 GitHub 官方
-      # CLI 上传，行为可预期、失败有明确报错。
+      # （工作流显示成功、Release 页却什么都没有），已弃用。
       - name: Build & package
         run: |
           npm run build
@@ -54,40 +53,74 @@ jobs:
         env:
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
 
+      # 诊断：把产物清单写进 job summary。Release 页看不到安装包时，
+      # 这里能直接确认构建到底产出了什么文件（CI 日志需要登录才能看）。
+      - name: List artifacts (diagnostics)
+        shell: bash
+        run: |
+          {
+            echo "## ${{ matrix.os }} 构建产物"
+            echo '```'
+            ls -la release/*/ 2>/dev/null || echo "release/*/ 不存在"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload installers as workflow artifacts
         uses: actions/upload-artifact@v4
         with:
           name: installers-${{ matrix.os }}
-          # 单层 * 只匹配 release/<version>/ 下的安装器，
-          # 不会把 win-unpacked/ 里的应用二进制（数百 MB）一起收进来
+          # 单层 * 只匹配 release/<version>/ 下的安装器，不会把
+          # win-unpacked/ 里数百 MB 的应用二进制一起收进来。
+          # latest*.yml 是自动更新元数据，builder-*.yml 是调试配置，不上传。
           path: |
             release/*/*.exe
             release/*/*.dmg
             release/*/*.AppImage
-            release/*/*.yml
-            !release/*/builder-*.yml
+            release/*/latest*.yml
+            release/*/*.blockmap
           if-no-files-found: error
           retention-days: 14
 
       - name: Publish to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*/*.exe
+            release/*/*.dmg
+            release/*/*.AppImage
+            release/*/latest*.yml
+            release/*/*.blockmap
+          # 各平台产物不同（mac 没有 .exe），不能因单个模式未命中就失败；
+          # 真正的把关交给下面的校验步骤。
+          fail_on_unmatched_files: false
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 上传后校验：Release 必须真有本平台的安装包，否则这步报红。
+      # 目的是杜绝"工作流全绿、Release 却空着"这种最难排查的失败。
+      - name: Verify release assets
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # 首次运行创建 Release（已存在则忽略）；随后把本平台产物挂上去
-          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
-          # 用 find -print0 | while read -d '' 逐条处理：Windows 安装器文件名带空格
-          # （"InstaDownloader Setup 0.2.0.exe"），未加引号的 $files 会被词分割成
-          # 三个参数，gh 对不存在的路径报 "no matches found"（实测 Windows 失败、
-          # macOS/Linux 因文件名无空格而通过）。管道内的 set -e 同样生效：
-          # 任一上传失败会让该子 shell 非零退出，pipefail 再把整步判为失败。
-          find release -maxdepth 2 -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.yml' \) ! -name 'builder-*.yml' -print0 |
-            while IFS= read -r -d '' f; do
-              echo "uploading: $f"
-              # 同名资产重复上传会报错：先删旧再传（重跑 tag 场景）
-              gh release delete-asset "$GITHUB_REF_NAME" "$(basename "$f")" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-              gh release upload "$GITHUB_REF_NAME" "$f" --repo "$GITHUB_REPOSITORY" --clobber
-            done
+          names=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' || true)
+          {
+            echo "## ${{ matrix.os }} → Release 资产"
+            echo '```'
+            echo "${names:-<空>}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "${{ matrix.os }}" in
+            windows-latest) want='\.exe$' ;;
+            macos-latest) want='\.dmg$' ;;
+            ubuntu-latest) want='\.AppImage$' ;;
+          esac
+          if ! printf '%s\n' "$names" | grep -Eq "$want"; then
+            echo "::error::Release 缺少 ${{ matrix.os }} 的安装包（资产清单见 job summary）"
+            exit 1
+          fi
