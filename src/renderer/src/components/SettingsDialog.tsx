@@ -27,13 +27,14 @@ import { useSettingsStore } from '@/stores/settings'
 import { useIgAccountStore } from '@/stores/ig-account'
 import { SmartImage } from '@/components/ui/smart-image'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useI18n } from '@/i18n'
 import { GITHUB_REPO_LABEL, GITHUB_REPO_URL } from '@shared/repo'
 import { cn, formatBytes } from '@/lib/utils'
 
-const THEME_OPTIONS: Array<{ value: ThemeMode; label: string; icon: typeof Sun }> = [
-  { value: 'light', label: '浅色', icon: Sun },
-  { value: 'dark', label: '深色', icon: Moon },
-  { value: 'system', label: '跟随系统', icon: Monitor }
+const THEME_OPTIONS: Array<{ value: ThemeMode; labelKey: string; icon: typeof Sun }> = [
+  { value: 'light', labelKey: 'settings.themeLight', icon: Sun },
+  { value: 'dark', labelKey: 'settings.themeDark', icon: Moon },
+  { value: 'system', labelKey: 'settings.themeSystem', icon: Monitor }
 ]
 
 /**
@@ -46,6 +47,7 @@ const THEME_OPTIONS: Array<{ value: ThemeMode; label: string; icon: typeof Sun }
  * - 功能入口（打开下载目录、账号面板）就近放置，不让用户去别处找。
  */
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useI18n()
   const settings = useSettingsStore((s) => s.settings)
   const save = useSettingsStore((s) => s.save)
   const setIgLoggedIn = useIgAccountStore((s) => s.setLoggedIn)
@@ -104,9 +106,9 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const openDir = async () => {
     try {
       const opened = await window.instadown.openDownloadDir()
-      if (opened === null) toast.error('下载目录未设置')
+      if (opened === null) toast.error(t('settings.dirNotSet'))
     } catch (e) {
-      toast.error(`无法打开目录：${(e as Error).message}`)
+      toast.error(`${t('settings.dirOpenFailed')}：${(e as Error).message}`)
     }
   }
 
@@ -133,16 +135,16 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         setHasSession(true)
         setProfile(prof)
         setIgLoggedIn(prof)
-        toast.success(res.username ? `已登录 Instagram：@${res.username}` : 'Instagram 登录成功', {
-          description: '会话已加密保存在本机'
+        toast.success(res.username ? t('settings.loginOk', { name: res.username }) : t('settings.loginOkPlain'), {
+          description: t('settings.cookieSavedNote')
         })
       } else if (res.cancelled) {
-        toast.info('已取消登录')
+        toast.info(t('settings.loginCancelled'))
       } else {
-        toast.error(res.message ?? '未检测到登录状态，请重试')
+        toast.error(res.message ?? t('settings.loginFailed'))
       }
     } catch (e) {
-      toast.error(`登录失败：${(e as Error).message}`)
+      toast.error(`${t('settings.loginError')}：${(e as Error).message}`)
     } finally {
       setLoggingIn(false)
     }
@@ -154,9 +156,9 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       setHasSession(false)
       setProfile(null)
       setIgLoggedIn(null)
-      toast.success('已退出登录并清除本地会话')
+      toast.success(t('settings.loggedOut'))
     } catch (e) {
-      toast.error(`退出失败：${(e as Error).message}`)
+      toast.error(`${t('settings.logoutFailed')}：${(e as Error).message}`)
     }
   }
 
@@ -165,11 +167,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       const n = await window.instadown.clearImageCache()
       setCache({ files: 0, bytes: 0 })
       setConfirm(null)
-      toast.success(`已清空图片缓存（${n} 个文件）`, {
-        description: '下次浏览时会重新缓存，缩略图首次显示会稍慢'
+      toast.success(t('settings.cacheCleared', { n }), {
+        description: t('settings.cacheClearedDesc')
       })
     } catch (e) {
-      toast.error(`清空失败：${(e as Error).message}`)
+      toast.error(`${t('settings.clearFailed')}：${(e as Error).message}`)
     }
   }
 
@@ -178,17 +180,17 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       await window.instadown.clearHistory()
       setHistoryCount(0)
       setConfirm(null)
-      toast.success('已清空下载历史', { description: '已下载的文件不会被删除' })
+      toast.success(t('settings.historyCleared'), { description: t('settings.historyClearedDesc') })
     } catch (e) {
-      toast.error(`清空失败：${(e as Error).message}`)
+      toast.error(`${t('settings.clearFailed')}：${(e as Error).message}`)
     }
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title="设置">
+    <Dialog open={open} onClose={onClose} title={t("settings.title")}>
       <div className="space-y-6 p-5">
         {/* ───────────────────────── 外观 */}
-        <Group icon={Palette} title="外观" desc="界面主题，立即生效">
+        <Group icon={Palette} title={t("settings.appearance")} desc={t("settings.appearanceDesc")}>
           <div className="grid grid-cols-3 gap-2">
             {THEME_OPTIONS.map((opt) => {
               const Icon = opt.icon
@@ -205,7 +207,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                   )}
                 >
                   <Icon className={cn('h-4 w-4', active && 'text-rose-500')} />
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </button>
               )
             })}
@@ -213,22 +215,22 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         </Group>
 
         {/* ───────────────────────── 下载 */}
-        <Group icon={Download} title="下载" desc="保存位置与并发">
-          <Field label="下载目录" hint="文件按 用户名 / 日期 / 类型 自动归类">
+        <Group icon={Download} title={t("settings.download")} desc={t("settings.downloadDesc")}>
+          <Field label={t("settings.downloadDir")} hint={t("settings.downloadDirHint")}>
             <div className="flex gap-2">
               <Input value={dir} readOnly className="flex-1 font-mono text-xs" />
-              <Button variant="secondary" onClick={chooseDir} title="选择新的下载目录">
-                <FolderOpen className="h-4 w-4" /> 更改
+              <Button variant="secondary" onClick={chooseDir} title={t("settings.chooseDir")}>
+                <FolderOpen className="h-4 w-4" /> {t("settings.change")}
               </Button>
-              <Button variant="outline" onClick={() => void openDir()} title="在文件管理器中打开">
-                打开
+              <Button variant="outline" onClick={() => void openDir()} title={t("settings.openInFileManager")}>
+                {t("library.openItem")}
               </Button>
             </div>
           </Field>
 
           <Field
-            label="同时下载任务数"
-            hint="并发越高越快，但更容易被 Instagram 限流；建议保持 3"
+            label={t("settings.concurrency")}
+            hint={t("settings.concurrencyHint")}
           >
             <div className="flex gap-1.5">
               {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -239,7 +241,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                     await save({ concurrency: n })
                     flashSaved()
                   }}
-                  title={n > 3 ? `${n} 并发可能触发 IG 限流` : `${n} 个任务同时下载`}
+                  title={n > 3 ? t("settings.concurrencyWarn", { n }) : t("settings.concurrencyOk", { n })}
                   className={cn(
                     'h-8 w-8 rounded-lg text-sm transition-colors',
                     n === concurrency
@@ -255,10 +257,10 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         </Group>
 
         {/* ───────────────────────── 行为 */}
-        <Group icon={Zap} title="行为" desc="解析与剪贴板">
+        <Group icon={Zap} title={t("settings.behavior")} desc={t("settings.behaviorDesc")}>
           <Toggle
-            label="剪贴板自动检测"
-            hint="窗口获得焦点时检测剪贴板中的 Instagram 链接并提示解析"
+            label={t("settings.autoClipboard")}
+            hint={t("settings.autoClipboardHint")}
             checked={autoClipboard}
             onChange={async () => {
               const next = !autoClipboard
@@ -270,10 +272,10 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         </Group>
 
         {/* ───────────────────────── 账号安全 */}
-        <Group icon={ShieldCheck} title="隐私与账号安全" desc="控制何时使用你的 IG 会话">
+        <Group icon={ShieldCheck} title={t("settings.privacy")} desc={t("settings.privacyDesc")}>
           <Toggle
-            label="无登录优先（强烈建议保持开启）"
-            hint="公开内容一律匿名获取，你的账号完全不进入请求路径，最大限度避免 IG 对自动化工具的风控与封号风险。关闭后公开请求也会携带会话（不推荐）。"
+            label={t("settings.anonymousFirstLong")}
+            hint={t("settings.anonymousFirstLongHint")}
             checked={anonymousFirst}
             tone="safe"
             onChange={async () => {
@@ -284,8 +286,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             }}
           />
           <Toggle
-            label="经由账号的操作前提醒"
-            hint="Stories 等只能用账号完成的功能，执行前会明确提示「本操作将使用你的 IG 会话」，并提供取消入口。"
+            label={t("settings.warnAccountUseLong")}
+            hint={t("settings.warnAccountUseLongHint")}
             checked={warnAccountUse}
             onChange={async () => {
               const next = !warnAccountUse
@@ -295,8 +297,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             }}
           />
           <Toggle
-            label="自动缓存浏览过的图片"
-            hint="把头像与缩略图保存到本机；IG 的图片链接带签名几小时后就失效，缓存后图片永久可看。占用可在下方「存储与数据」清理。"
+            label={t("settings.autoCacheLong")}
+            hint={t("settings.autoCacheLongHint")}
             checked={autoCacheImages}
             onChange={async () => {
               const next = !autoCacheImages
@@ -310,8 +312,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         {/* ───────────────────────── 账号 */}
         <Group
           icon={UserRound}
-          title="Instagram 账号"
-          desc="用于主页归档与 Stories（需登录）"
+          title={t("settings.account")}
+          desc={t("settings.accountDescLong")}
         >
           {hasSession ? (
             <div className="flex items-center justify-between rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5">
@@ -327,23 +329,21 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 )}
                 <div className="min-w-0">
                   <div className="truncate text-xs font-medium text-app">
-                    {profile?.username ? `已登录：@${profile.username}` : '已登录'}
+                    {profile?.username ? t('settings.loggedInAsShort', { name: profile.username }) : t('settings.loggedInBadge')}
                   </div>
                   <div className="text-[11px] text-subtle">
-                    会话已加密保存在本机 · 点击顶栏头像查看详情
+                    {t("settings.sessionEncryptedNote")}
                   </div>
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setConfirm('logout')}>
-                退出
+                {t("settings.logoutShort")}
               </Button>
             </div>
           ) : (
             <>
               <p className="text-[11px] leading-relaxed text-subtle">
-                点击下方按钮打开 Instagram 官方登录页，在其中登录你的账号即可。
-                登录凭据直接提交给 Instagram，本应用不接触密码，仅加密保存会话
-                Cookie（绝不联网上传）。
+                {t("settings.notLoggedInGuide")}
               </p>
               <Button
                 variant="primary"
@@ -351,26 +351,25 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 onClick={() => void handleLogin()}
                 disabled={loggingIn}
               >
-                <LogIn className="h-4 w-4" /> {loggingIn ? '等待登录…' : '登录 Instagram'}
+                <LogIn className="h-4 w-4" /> {loggingIn ? t('settings.waitingLogin') : t('settings.login')}
               </Button>
             </>
           )}
         </Group>
 
         {/* ───────────────────────── 存储与数据 */}
-        <Group icon={HardDrive} title="存储与数据" desc="本机占用与清理">
+        <Group icon={HardDrive} title={t("settings.storage")} desc={t("settings.storageDesc")}>
           <div className="space-y-2 rounded-lg border border-app bg-surface-hover/30 p-3">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5 text-muted">
-                <Database className="h-3.5 w-3.5" /> 图片缓存
+                <Database className="h-3.5 w-3.5" /> {t("settings.imageCache")}
               </span>
               <span className="tabular-nums text-app">
-                {cache ? `${cache.files} 个文件 · ${formatBytes(cache.bytes)}` : '统计中…'}
+                {cache ? `${t('settings.filesCount', { n: cache.files })} · ${formatBytes(cache.bytes)}` : t('settings.statsLoading')}
               </span>
             </div>
             <p className="text-[11px] leading-relaxed text-subtle">
-              头像与缩略图缓存在本机，避免 Instagram 链接过期后图片无法显示。
-              清空后再次浏览会重新缓存。
+              {t("settings.cacheHint")}
             </p>
             <Button
               variant="outline"
@@ -379,19 +378,19 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               onClick={() => setConfirm('cache')}
               disabled={!cache || cache.files === 0}
             >
-              <Trash2 className="h-3.5 w-3.5" /> 清空图片缓存
+              <Trash2 className="h-3.5 w-3.5" /> {t("settings.clearCache")}
             </Button>
           </div>
 
           <div className="space-y-2 rounded-lg border border-app bg-surface-hover/30 p-3">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5 text-muted">
-                <Info className="h-3.5 w-3.5" /> 下载历史
+                <Info className="h-3.5 w-3.5" /> {t("history.title")}
               </span>
-              <span className="tabular-nums text-app">{historyCount} 条记录</span>
+              <span className="tabular-nums text-app">{t("settings.recordsCount", { n: historyCount })}</span>
             </div>
             <p className="text-[11px] leading-relaxed text-subtle">
-              清空的是历史列表，<span className="font-medium text-muted">已下载到磁盘的文件不会被删除</span>。
+              {t("settings.historyHint.pre")}<span className="font-medium text-muted">{t("settings.historyHint.bold")}</span>{t("settings.historyHint.post")}
             </p>
             <Button
               variant="outline"
@@ -400,16 +399,16 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               onClick={() => setConfirm('history')}
               disabled={historyCount === 0}
             >
-              <Trash2 className="h-3.5 w-3.5" /> 清空下载历史
+              <Trash2 className="h-3.5 w-3.5" /> {t("settings.clearHistory")}
             </Button>
           </div>
         </Group>
 
         {/* ───────────────────────── 高级（折叠） */}
-        <AdvancedGroup title="高级">
+        <AdvancedGroup title={t("settings.advanced")}>
           <Field
-            label="手动粘贴会话 Cookie"
-            hint="仅当无法打开登录窗口、或已有现成 Cookie 时使用。格式：sessionid=…（可包含多个 cookie，用 ; 分隔）"
+            label={t("settings.pasteCookie")}
+            hint={t("settings.pasteCookieHint")}
           >
             <div className="flex gap-2">
               <Input
@@ -420,14 +419,14 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 className="flex-1 font-mono text-xs"
               />
               <Button variant="secondary" onClick={saveSession} disabled={!session.trim()}>
-                保存
+                {t("common.save")}
               </Button>
             </div>
           </Field>
         </AdvancedGroup>
 
         {/* ───────────────────────── 关于 */}
-        <Group icon={Info} title="关于" desc="版本信息与开源仓库">
+        <Group icon={Info} title={t("settings.about")} desc={t("settings.aboutDesc")}>
           <div className="space-y-2 rounded-lg border border-app bg-surface-hover/30 p-3">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5 text-muted">
@@ -440,7 +439,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             <button
               onClick={() => void window.instadown.openExternal(GITHUB_REPO_URL)}
               className="flex w-full items-center gap-2 rounded-md border border-app bg-surface px-2.5 py-2 text-left transition-colors hover:bg-surface-hover"
-              title="在浏览器中打开开源仓库"
+              title={t("settings.repoLinkTitle")}
             >
               <GithubIcon className="h-4 w-4 shrink-0 text-app" />
               <span className="min-w-0 flex-1 truncate text-xs font-medium text-app">
@@ -450,19 +449,19 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             </button>
 
             <p className="text-[11px] leading-relaxed text-subtle">
-              如果这个项目帮你留住了想收藏的内容，欢迎到 GitHub 给一个
+              {t("settings.starPromptPre")}
               <span className="mx-0.5 inline-flex items-center gap-0.5 text-amber-500">
                 <Star className="h-3 w-3" />Star
               </span>
-              —— 这是对独立开发者最实在的鼓励，也能让更多人看到它。
+              {t("settings.starPromptPost")}
             </p>
           </div>
         </Group>
 
         <div className="flex items-center justify-end gap-2 border-t border-app pt-3">
-          {saved && <span className="text-xs text-emerald-600 dark:text-emerald-400">已保存</span>}
+          {saved && <span className="text-xs text-emerald-600 dark:text-emerald-400">{t("settings.saved")}</span>}
           <Button variant="secondary" onClick={onClose}>
-            完成
+            {t("common.done")}
           </Button>
         </div>
       </div>
@@ -470,29 +469,29 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       {/* 破坏性操作确认：清空缓存 / 清空历史 / 退出登录 */}
       <ConfirmDialog
         open={confirm === 'cache'}
-        title="清空图片缓存？"
+        title={t("settings.confirmCacheTitle")}
         message={
           cache
-            ? `将删除 ${cache.files} 个缓存文件（${formatBytes(cache.bytes)}）。此操作不可撤销；下次浏览时会重新缓存，缩略图首次显示会稍慢。`
-            : '将删除全部缓存文件。此操作不可撤销。'
+            ? t("settings.confirmCacheBody", { n: cache.files, size: formatBytes(cache.bytes) })
+            : t("settings.confirmCacheBodyGeneric")
         }
-        confirmLabel="清空"
+        confirmLabel={t("common.confirm")}
         onConfirm={() => void clearCache()}
         onCancel={() => setConfirm(null)}
       />
       <ConfirmDialog
         open={confirm === 'history'}
-        title="清空下载历史？"
-        message={`将删除全部 ${historyCount} 条历史记录。此操作不可撤销；已下载到磁盘的文件不会被删除。`}
-        confirmLabel="清空"
+        title={t("settings.confirmHistoryTitle")}
+        message={t("settings.confirmHistoryBody", { n: historyCount })}
+        confirmLabel={t("common.confirm")}
         onConfirm={() => void clearHistory()}
         onCancel={() => setConfirm(null)}
       />
       <ConfirmDialog
         open={confirm === 'logout'}
-        title="退出 Instagram 登录？"
-        message="将清除本机保存的登录会话，主页归档与 Stories 将不可用，直到重新登录。"
-        confirmLabel="退出登录"
+        title={t("settings.confirmLogoutTitle")}
+        message={t("settings.confirmLogoutBody")}
+        confirmLabel={t("settings.logoutLabel")}
         onConfirm={() => void handleLogout()}
         onCancel={() => setConfirm(null)}
       />

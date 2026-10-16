@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from '@/components/ui/primitives'
+import { useI18n } from '@/i18n'
 
 /**
  * 破坏性操作确认框（模态）。
@@ -15,8 +16,8 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = '确认',
-  cancelLabel = '取消',
+  confirmLabel,
+  cancelLabel,
   danger = true,
   onConfirm,
   onCancel
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -96,7 +98,7 @@ export function ConfirmDialog({
                 className={danger ? 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700' : undefined}
                 onClick={onConfirm}
               >
-                {confirmLabel}
+                {confirmLabel ?? t('common.confirm')}
               </Button>
             </div>
           </motion.div>

@@ -53,6 +53,8 @@ const api = {
   },
   /** 应用版本号（设置 → 关于） */
   getAppVersion: () => ipcRenderer.invoke('app:version'),
+  /** 渲染层语言切换时同步到主进程（系统通知/对话框文案跟随） */
+  setLocale: (locale: 'zh-CN' | 'en') => ipcRenderer.invoke('window:setLocale', locale),
 
   readClipboard: () => ipcRenderer.invoke('clipboard:readText'),
   revealFile: (path: string) => ipcRenderer.invoke('file:reveal', path),

@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useI18n } from '@/i18n'
 
 export function MediaGrid({
   items,
@@ -222,6 +223,7 @@ const ContextMenu = forwardRef<HTMLDivElement, ContextMenuProps>(function Contex
   { x, y, item, onClose, onCopyLink, onDownloadItem, onOpenInBrowser, onRevealFile },
   ref
 ) {
+  const { t } = useI18n()
   const tasks = useTaskStore((s) => s.tasks)
   const taskStatusById = useMemo(() => {
     const m = new Map<string | null, string>()
@@ -250,13 +252,13 @@ const ContextMenu = forwardRef<HTMLDivElement, ContextMenuProps>(function Contex
       className="min-w-[160px] overflow-hidden rounded-lg border border-app-strong bg-surface-hover py-1 shadow-xl shadow-black/40"
       onClick={(e) => e.stopPropagation()}
     >
-      <MenuItem icon={Copy} label="复制链接" onClick={() => handleClick(() => onCopyLink(item))} />
-      <MenuItem icon={Download} label="下载此媒体" onClick={() => handleClick(() => onDownloadItem(item))} />
-      <MenuItem icon={ExternalLink} label="在新窗口打开" onClick={() => handleClick(() => onOpenInBrowser(item))} />
+      <MenuItem icon={Copy} label={t("grid.copyLink")} onClick={() => handleClick(() => onCopyLink(item))} />
+      <MenuItem icon={Download} label={t("viewer.downloadThis")} onClick={() => handleClick(() => onDownloadItem(item))} />
+      <MenuItem icon={ExternalLink} label={t("grid.openInBrowser")} onClick={() => handleClick(() => onOpenInBrowser(item))} />
       {isDownloaded && (
         <>
           <div className="mx-2 my-1 border-t border-app-strong" />
-          <MenuItem icon={FolderOpen} label="在文件夹中显示" onClick={() => handleClick(() => onRevealFile(item))} />
+          <MenuItem icon={FolderOpen} label={t("grid.revealFile")} onClick={() => handleClick(() => onRevealFile(item))} />
         </>
       )}
     </div>

@@ -7,6 +7,7 @@ import { Badge, Button } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { SmartVideo } from '@/components/ui/smart-video'
 import { formatDate, formatDuration } from '@/lib/utils'
+import { useI18n } from '@/i18n'
 
 /**
  * 应用内媒体查看器（docs/01）：图片/视频都在应用内完成浏览与下载，
@@ -33,6 +34,7 @@ export function MediaViewer({
 }) {
   const [index, setIndex] = useState(initialIndex)
   const [showKeys, setShowKeys] = useState(false)
+  const { t } = useI18n()
   const item = items[index] ?? null
 
   const goPrev = useCallback(() => setIndex((i) => (i > 0 ? i - 1 : i)), [])
@@ -85,7 +87,7 @@ export function MediaViewer({
             {items.length > 1 && index > 0 && (
               <button
                 onClick={goPrev}
-                title="上一张 (←)"
+                title={t("viewer.prevKey")}
                 className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white/90 opacity-0 transition-opacity hover:bg-black/70 focus:opacity-100 group-hover:opacity-100 [div:hover>&]:opacity-100"
               >
                 ‹
@@ -94,7 +96,7 @@ export function MediaViewer({
             {items.length > 1 && index < items.length - 1 && (
               <button
                 onClick={goNext}
-                title="下一张 (→)"
+                title={t("viewer.nextKey")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white/90 opacity-0 transition-opacity hover:bg-black/70 [div:hover>&]:opacity-100"
               >
                 ›
@@ -103,14 +105,14 @@ export function MediaViewer({
           </div>
           {items.length > 1 && (
             <div className="flex items-center justify-center gap-4 border-t border-app/50 py-1.5">
-              <Button variant="ghost" size="sm" onClick={goPrev} disabled={index === 0}>‹ 上一张</Button>
+              <Button variant="ghost" size="sm" onClick={goPrev} disabled={index === 0}>‹ {t("viewer.prev")}</Button>
               <span className="text-xs text-subtle">{index + 1} / {items.length}</span>
-              <Button variant="ghost" size="sm" onClick={goNext} disabled={index === items.length - 1}>下一张 ›</Button>
+              <Button variant="ghost" size="sm" onClick={goNext} disabled={index === items.length - 1}>{t("viewer.next")} ›</Button>
             </div>
           )}
           <div className="flex items-center justify-between gap-3 border-t border-app px-5 py-3">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-              <Badge tone="neutral">{item.type === 'video' ? '视频' : '图片'}</Badge>
+              <Badge tone="neutral">{item.type === 'video' ? t('common.video') : t('common.image')}</Badge>
               {item.width && item.height && (
                 <span>{item.width}×{item.height}</span>
               )}
@@ -119,19 +121,19 @@ export function MediaViewer({
               {/* 快捷键提示：隐藏操作的可见化（悬停展开完整说明） */}
               <span
                 className="group/keys relative flex cursor-default items-center gap-1 text-subtle"
-                title={hideDownload ? '← → 翻页 · Esc 关闭' : '← → 翻页 · Enter 下载 · Esc 关闭'}
+                title={hideDownload ? t("viewer.keysHintNoDownload") : t("viewer.keysHint")}
               >
                 <Keyboard className="h-3.5 w-3.5 cursor-pointer" onClick={() => setShowKeys((v) => !v)} />
               </span>
               {showKeys && (
                 <span className="text-[11px] text-subtle">
-                  {hideDownload ? '← → 翻页 · Esc 关闭' : '← → 翻页 · Enter 下载 · Esc 关闭'}
+                  {hideDownload ? t("viewer.keysHintNoDownload") : t("viewer.keysHint")}
                 </span>
               )}
             </div>
             {!hideDownload && (
               <Button variant="primary" size="sm" onClick={() => onDownload(item)}>
-                <Download className="h-4 w-4" /> 下载此媒体
+                <Download className="h-4 w-4" /> {t("viewer.downloadThis")}
               </Button>
             )}
           </div>

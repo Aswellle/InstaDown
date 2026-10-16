@@ -15,6 +15,7 @@ import { formatBytes, formatDate } from '@/lib/utils'
 import { canViewInApp, fileKindOf, localFileUrl } from '@/lib/local-file'
 import { FileThumb } from '@/components/ui/file-thumb'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useI18n } from '@/i18n'
 
 interface HistoryPanelProps {
   open: boolean
@@ -26,6 +27,7 @@ interface HistoryPanelProps {
 }
 
 export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps) {
+  const { t } = useI18n()
   const [history, setHistory] = useState<HistoryRow[]>([])
   const [loading, setLoading] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
@@ -36,7 +38,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
       const rows = await window.instadown.getHistory()
       setHistory(rows)
     } catch {
-      toast.error('获取历史记录失败')
+      toast.error(t('history.fetchFailed'))
     } finally {
       setLoading(false)
     }
@@ -72,7 +74,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     (row: HistoryRow) => {
       if (!canViewInApp(row.path)) {
         // 非图片/视频（未知扩展名）：应用内无法渲染，交给系统默认程序
-        void window.instadown.openFile(row.path).catch(() => toast.error('无法打开文件'))
+        void window.instadown.openFile(row.path).catch(() => toast.error(t('history.openFailed')))
         return
       }
       const idx = viewableItems.findIndex((i) => i.id === String(row.id))
@@ -85,7 +87,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     try {
       await window.instadown.revealFile(path)
     } catch {
-      toast.error('无法打开文件夹')
+      toast.error(t('history.revealFailed'))
     }
   }, [])
 
@@ -93,21 +95,21 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     try {
       await window.instadown.openFile(path)
     } catch {
-      toast.error('无法打开文件')
+      toast.error(t('history.openFailed'))
     }
   }, [])
 
   const handleCopyPath = useCallback(async (path: string) => {
     try {
       await navigator.clipboard.writeText(path)
-      toast.success('路径已复制')
+      toast.success(t('history.pathCopied'))
     } catch {
-      toast.error('复制失败')
+      toast.error(t('history.copyFailed'))
     }
   }, [])
 
   const handleReDownload = useCallback(() => {
-    toast.info('请重新解析原始链接以下载')
+    toast.info(t('history.redownloadHint'))
   }, [])
 
   const handleClearHistory = useCallback(async () => {
@@ -115,9 +117,9 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
       await window.instadown.clearHistory()
       setHistory([])
       setConfirmClear(false)
-      toast.success('历史记录已清空')
+      toast.success(t('history.cleared'))
     } catch {
-      toast.error('清空失败')
+      toast.error(t('history.clearFailed'))
     }
   }, [])
 
@@ -145,8 +147,8 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
             {/* Header */}
             <div className="flex h-12 shrink-0 items-center gap-2 border-b border-app px-4">
               <HistoryIcon className="h-4 w-4 text-rose-400" />
-              <span className="text-sm font-medium text-app">下载历史</span>
-              <span className="text-xs text-subtle">{history.length} 条</span>
+              <span className="text-sm font-medium text-app">{t("history.title")}</span>
+              <span className="text-xs text-subtle">{t("history.count", { n: history.length })}</span>
               <div className="ml-auto flex items-center gap-1">
                 {history.length > 0 && (
                   <button
@@ -154,7 +156,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
                     className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-hover/60 hover:text-app"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    清空
+                    {t("history.clear")}
                   </button>
                 )}
                 <button
@@ -175,7 +177,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
               ) : history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-subtle">
                   <HistoryIcon className="mb-2 h-8 w-8" />
-                  <span className="text-sm">暂无下载记录</span>
+                  <span className="text-sm">{t("history.empty")}</span>
                 </div>
               ) : (
                 <div className="space-y-1 p-2">
@@ -200,9 +202,9 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
       {/* 清空历史：破坏性操作必须确认（防误触；文件本身不受影响） */}
       <ConfirmDialog
         open={confirmClear}
-        title="清空下载历史？"
-        message={`将删除全部 ${history.length} 条历史记录。此操作不可撤销；已下载到磁盘的文件不会被删除。`}
-        confirmLabel="清空"
+        title={t("history.confirmTitle")}
+        message={t("history.confirmBody", { n: history.length })}
+        confirmLabel={t("history.clear")}
         onConfirm={() => void handleClearHistory()}
         onCancel={() => setConfirmClear(false)}
       />
@@ -225,12 +227,13 @@ function HistoryItem({
   onCopy: (path: string) => void
   onReDownload: () => void
 }) {
+  const { t } = useI18n()
   const inApp = canViewInApp(row.path)
   return (
     <div
       className="group flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-surface-hover"
       onClick={() => onOpen(row)}
-      title={inApp ? '在应用内查看' : '用系统默认程序打开'}
+      title={inApp ? t("history.viewInApp") : t("history.openExternal")}
     >
       {/* 缩略图：图片直接读盘显示，视频/其他显示类型图标 —— 一眼看出每项是什么 */}
       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-surface-hover/60">
@@ -238,7 +241,7 @@ function HistoryItem({
       </div>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm text-app">
-          {row.author ?? '未知作者'}
+          {row.author ?? t("common.unknownAuthor")}
         </div>
         <div className="truncate text-[11px] text-subtle" title={row.path}>
           {row.path.split(/[\\/]/).pop()}
@@ -253,7 +256,7 @@ function HistoryItem({
         <button
           onClick={(e) => { e.stopPropagation(); onReveal(row.path) }}
           className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
-          title="在文件夹中显示"
+          title={t("history.reveal")}
         >
           <FolderOpen className="h-3.5 w-3.5" />
         </button>
@@ -262,7 +265,7 @@ function HistoryItem({
           <button
             onClick={(e) => { e.stopPropagation(); onOpenExternal(row.path) }}
             className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
-            title="用系统默认程序打开"
+            title={t("history.openExternal")}
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
@@ -270,14 +273,14 @@ function HistoryItem({
         <button
           onClick={(e) => { e.stopPropagation(); onReDownload() }}
           className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
-          title="重新下载"
+          title={t("history.redownload")}
         >
           <RotateCcw className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onCopy(row.path) }}
           className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
-          title="复制路径"
+          title={t("history.copyPath")}
         >
           <Copy className="h-3.5 w-3.5" />
         </button>

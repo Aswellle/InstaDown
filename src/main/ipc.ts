@@ -173,11 +173,17 @@ export function registerIpc(deps: IpcDeps): void {
     win()?.webContents.send('task:event', ev)
   })
 
-  // 系统通知（fire-and-forget）
+  // 系统通知（fire-and-forget）。文案语言跟随渲染层选择：
+  // 渲染层在语言切换时调用 window:setLocale 通知主进程；
+  // 主进程兜底用系统 locale 解析（简中 or 其它一律英文）。
+  let uiLocale: 'zh-CN' | 'en' = /^(zh)/i.test(app.getLocale()) ? 'zh-CN' : 'en'
+  const notifText = () =>
+    uiLocale === 'zh-CN' ? { title: '下载完成' } : { title: 'Download complete' }
   ipcMain.on('notification:download-complete', (_e, { filename, destPath }: { filename: string; destPath: string }) => {
     if (!Notification.isSupported()) return
+    const { title } = notifText()
     const notif = new Notification({
-      title: '下载完成',
+      title,
       body: filename
     })
     notif.on('click', () => {
@@ -190,6 +196,11 @@ export function registerIpc(deps: IpcDeps): void {
     // 必须剥离 Electron 传入的 event 参数（见 ipc-helpers.ts 的回归说明）
     ipcMain.handle(channel, toIpcHandler(fn as (...args: unknown[]) => unknown) as never)
   }
+
+  // 渲染层语言切换时同步到主进程（通知/对话框文案跟随）
+  handle('window:setLocale', (locale: 'zh-CN' | 'en') => {
+    if (locale === 'zh-CN' || locale === 'en') uiLocale = locale
+  })
 
   // ------------------------------------------------------------ 解析
   handle('parse:url', async (url: string) => {
@@ -407,7 +418,7 @@ export function registerIpc(deps: IpcDeps): void {
     if (!w) return null
     const r = await dialog.showOpenDialog(w, {
       properties: ['openDirectory', 'createDirectory'],
-      title: '选择下载目录'
+      title: uiLocale === 'zh-CN' ? '选择下载目录' : 'Choose download directory'
     })
     if (r.canceled || r.filePaths.length === 0) return null
     return settings.set({ downloadDir: r.filePaths[0] }).downloadDir

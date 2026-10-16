@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { Aperture, ClipboardPaste, LogIn, Search } from 'lucide-react'
+import { Aperture, ClipboardPaste, Languages, LogIn, Search } from 'lucide-react'
 import { Button } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { GithubIcon } from '@/components/ui/github-icon'
 import { useIgAccountStore } from '@/stores/ig-account'
 import { isProbablyIgUrl } from '@shared/ig-url'
 import { GITHUB_REPO_URL } from '@shared/repo'
+import { useI18n, type Locale } from '@/i18n'
 
-/** 顶部：Logo + URL 输入（粘贴快捷键）+ 解析 + 账号入口（docs/09） */
+/** 顶部：Logo + URL 输入（粘贴快捷键）+ 语言/账号入口（docs/09） */
 export function TopBar({
   onParse,
   onAutoClipboard,
@@ -22,8 +23,11 @@ export function TopBar({
   onLoginClick: () => void
 }) {
   const [value, setValue] = useState('')
+  const [langOpen, setLangOpen] = useState(false)
+  const langRef = useRef<HTMLDivElement>(null)
   const loggedIn = useIgAccountStore((s) => s.loggedIn)
   const profile = useIgAccountStore((s) => s.profile)
+  const { t, locale, setLocale, followingSystem } = useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
 
   // 窗口聚焦时检测剪贴板中的 IG 链接（参考产品"一键粘贴"体验的桌面化）
@@ -58,6 +62,16 @@ export function TopBar({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // 点击外部关闭语言下拉
+  useEffect(() => {
+    if (!langOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!langRef.current?.contains(e.target as Node)) setLangOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    return () => window.removeEventListener('mousedown', onDown)
+  }, [langOpen])
+
   const submit = () => {
     if (value.trim()) onParse(value)
   }
@@ -73,6 +87,13 @@ export function TopBar({
       /* 忽略 */
     }
   }
+
+  const pickLang = (l: Locale | null) => {
+    setLocale(l)
+    setLangOpen(false)
+  }
+
+  const langLabel: Record<Locale, string> = { 'zh-CN': '简体中文', en: 'English' }
 
   return (
     <div className="flex h-full items-center gap-3">
@@ -91,10 +112,10 @@ export function TopBar({
             void window.instadown.openExternal(GITHUB_REPO_URL)
           }}
           className="no-drag ml-0.5 flex items-center gap-1 rounded-md px-1.5 py-1 text-muted transition-colors hover:bg-surface-hover hover:text-app"
-          title="在 GitHub 上 Star 这个项目 ⭐"
+          title={t('topBar.starTooltip')}
         >
           <GithubIcon className="h-4 w-4" />
-          <span className="hidden text-xs sm:inline">Star</span>
+          <span className="hidden text-xs sm:inline">{t('topBar.star')}</span>
         </a>
       </div>
 
@@ -107,7 +128,7 @@ export function TopBar({
             onKeyDown={(e) => {
               if (e.key === 'Enter') submit()
             }}
-            placeholder="粘贴 Instagram 帖子 / Reels / 主页链接，或输入用户名…  (Ctrl+K)"
+            placeholder={t('topBar.placeholder')}
             className="h-9 w-full rounded-lg border border-app bg-surface pl-9 pr-20 text-sm text-app placeholder:text-subtle focus-visible:border-rose-500/60 focus-visible:outline-none"
             spellCheck={false}
           />
@@ -115,27 +136,79 @@ export function TopBar({
           <button
             onClick={paste}
             className="absolute right-2 top-1/2 flex h-6 -translate-y-1/2 items-center gap-1 rounded-md bg-surface-hover px-2 text-xs text-muted hover:bg-surface-active"
-            title="读取剪贴板并解析"
+            title={t('topBar.pasteTooltip')}
           >
-            <ClipboardPaste className="h-3 w-3" /> 粘贴
+            <ClipboardPaste className="h-3 w-3" /> {t('topBar.paste')}
           </button>
         </div>
         <Button variant="primary" size="md" onClick={submit} disabled={!value.trim()}>
-          解析
+          {t('topBar.parse')}
         </Button>
       </div>
 
-      {/* 右侧：IG 账号入口。
-          设置入口在左上角图标组（避免被 Windows 原生窗口控制按钮遮挡）。
-          注意：这里不再放"解析服务"圆点——它只是个静态指示、点不动也读不出
-          更多信息，用户反馈"没有实际功用"，因此移除；服务异常仍会通过
-          toast 提示（App.tsx 的 onWorkerStatus）。 */}
+      {/* 右侧：语言切换 + IG 账号入口。
+          语言切换放在最右（窗口控制按钮左侧第一个可见控件），
+          下拉里标注"跟随系统"状态；设置入口在左上角图标组。 */}
       <div className="no-drag flex items-center gap-2 pr-1">
+        {/* 语言切换：地球图标 + 当前语言短名，下拉选择。
+            需求要求入口在主窗口右侧且显眼 —— 图标 + 文字比纯图标可发现性高。 */}
+        <div className="relative" ref={langRef}>
+          <button
+            onClick={() => setLangOpen((v) => !v)}
+            className="flex items-center gap-1.5 rounded-full border border-app px-2.5 py-1 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
+            title={t('topBar.language')}
+            aria-haspopup="menu"
+            aria-expanded={langOpen}
+          >
+            <Languages className="h-3.5 w-3.5" />
+            <span className="max-w-20 truncate">{langLabel[locale]}</span>
+            {followingSystem && <span className="text-subtle">·</span>}
+          </button>
+          {langOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-9 z-50 w-44 overflow-hidden rounded-xl border border-app bg-surface py-1 shadow-2xl"
+            >
+              <button
+                role="menuitem"
+                onClick={() => pickLang('zh-CN')}
+                className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs hover:bg-surface-hover ${
+                  locale === 'zh-CN' ? 'text-rose-600 dark:text-rose-400' : 'text-app'
+                }`}
+              >
+                简体中文
+                {locale === 'zh-CN' && <span aria-hidden>✓</span>}
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => pickLang('en')}
+                className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs hover:bg-surface-hover ${
+                  locale === 'en' ? 'text-rose-600 dark:text-rose-400' : 'text-app'
+                }`}
+              >
+                English
+                {locale === 'en' && <span aria-hidden>✓</span>}
+              </button>
+              <div className="my-1 h-px bg-app-strong" />
+              <button
+                role="menuitem"
+                onClick={() => pickLang(null)}
+                className={`flex w-full items-center justify-between px-3 py-2 text-left text-xs hover:bg-surface-hover ${
+                  followingSystem ? 'text-rose-600 dark:text-rose-400' : 'text-muted'
+                }`}
+              >
+                {t('settings.languageAuto')}
+                {followingSystem && <span aria-hidden>✓</span>}
+              </button>
+            </div>
+          )}
+        </div>
+
         {loggedIn && profile ? (
           <button
             onClick={onAccountClick}
             className="flex items-center gap-2 rounded-full border border-app py-0.5 pl-0.5 pr-2.5 transition-colors hover:bg-surface-hover"
-            title={`已登录 Instagram：@${profile.username}（点击查看账号详情）`}
+            title={t('topBar.accountTooltip', { name: profile.username })}
           >
             <SmartImage
               src={profile.avatar}
@@ -150,10 +223,10 @@ export function TopBar({
           <button
             onClick={onLoginClick}
             className="flex items-center gap-1.5 rounded-full border border-app px-2.5 py-1 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
-            title="登录 Instagram 账号（用于 Stories / 主页归档）"
+            title={t('topBar.loginTooltip')}
           >
             <LogIn className="h-3.5 w-3.5" />
-            登录
+            {t('topBar.login')}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Download, ListChecks, X } from 'lucide-react'
 import { Button } from '@/components/ui/primitives'
+import { useI18n } from '@/i18n'
 
 /**
  * 批量多选操作面板（悬浮于网格之上）。
@@ -25,6 +26,7 @@ export function SelectionBar({
   onSelectAll: () => void
   onClear: () => void
 }) {
+  const { t } = useI18n()
   return (
     <AnimatePresence>
       {count > 0 && (
@@ -36,7 +38,7 @@ export function SelectionBar({
           className="pointer-events-auto absolute inset-x-0 bottom-4 z-30 mx-auto flex w-fit items-center gap-1.5 rounded-2xl border border-app-strong bg-surface px-3 py-2 shadow-2xl shadow-black/25 ring-1 ring-black/5 dark:ring-white/5"
         >
           <span className="flex items-baseline gap-1 px-1.5 text-sm text-app">
-            <span className="text-muted">已选</span>
+            <span className="text-muted">{t("selection.selected")}</span>
             <span className="text-base font-semibold tabular-nums text-rose-600 dark:text-rose-400">
               {count}
             </span>
@@ -46,13 +48,13 @@ export function SelectionBar({
           <div className="mx-1 h-5 w-px bg-app-strong" />
 
           <Button variant="primary" size="sm" onClick={onDownload}>
-            <Download className="h-4 w-4" /> 下载所选
+            <Download className="h-4 w-4" /> {t("selection.downloadSelected")}
           </Button>
-          <Button variant="secondary" size="sm" onClick={onSelectAll} title="全选 (Ctrl+A)">
-            <ListChecks className="h-4 w-4" /> 全选
+          <Button variant="secondary" size="sm" onClick={onSelectAll} title={t("selection.selectAllTitle")}>
+            <ListChecks className="h-4 w-4" /> {t("selection.selectAll")}
           </Button>
-          <Button variant="ghost" size="sm" onClick={onClear} title="清除选择 (Esc)">
-            <X className="h-4 w-4" /> 清除
+          <Button variant="ghost" size="sm" onClick={onClear} title={t("selection.clearTitle")}>
+            <X className="h-4 w-4" /> {t("selection.clear")}
           </Button>
         </motion.div>
       )}

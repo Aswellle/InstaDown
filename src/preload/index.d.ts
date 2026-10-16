@@ -83,6 +83,8 @@ declare global {
       onNativeTheme(cb: (dark: boolean) => void): () => void
       /** 应用版本号（设置 → 关于） */
       getAppVersion(): Promise<string>
+      /** 渲染层语言切换时同步到主进程（系统通知/对话框文案跟随） */
+      setLocale(locale: 'zh-CN' | 'en'): Promise<void>
       readClipboard(): Promise<string>
       revealFile(path: string): Promise<void>
       clearHistory(): Promise<void>

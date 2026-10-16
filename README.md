@@ -7,7 +7,7 @@
 
 **把 Instagram 媒体完整地归档在你自己的硬盘上。**
 
-[![Release](https://img.shields.io/badge/Release-v0.2.0-rose?logo=github)](../../releases)
+[![Release](https://img.shields.io/badge/Release-v0.3.0-rose?logo=github)](../../releases)
 [![Tests](https://img.shields.io/badge/Tests-100%20passing-16a34a?logo=vitest)](#开发)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?logo=electron)](#下载)
 [![License](https://img.shields.io/badge/License-MIT-8b5cf6)](LICENSE)
@@ -94,6 +94,7 @@ InstaDownloader 的答案是三个设计承诺：
 </div>
 
 **桌面体验**
+- 简体中文 / English 双语界面：右上角地球图标一键切换，默认跟随系统语言
 - 浅色 / 深色 / 跟随系统三态主题（浅色默认），Windows 窗口控制按钮区同步跟随
 - 剪贴板智能分类检测：帖子链接、主页链接、用户名各有差异化提示
 - 破坏性操作（清空历史/缓存、退出登录）全部二次确认
@@ -115,6 +116,10 @@ InstaDownloader 的答案是三个设计承诺：
 4. 左上角「媒体库」随时回看已归档内容——支持全屏网格视图
 
 无需注册、无需登录即可使用上述全部功能。
+
+**切换界面语言**：主窗口右上角的地球图标（语言菜单）→ 选择 简体中文 / English；
+默认跟随系统语言，选择会记住，也可选「跟随系统」恢复自动。系统通知与
+原生对话框的文案随界面语言一起切换。
 
 ## 工作原理
 

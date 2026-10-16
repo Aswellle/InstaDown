@@ -18,19 +18,21 @@ import type { TaskSnapshot } from '@shared/types'
 import { useTaskStore } from '@/stores/tasks'
 import { Badge, Button, Progress } from '@/components/ui/primitives'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useI18n } from '@/i18n'
 import { cn, formatBytes, formatSpeed } from '@/lib/utils'
 
-const STATUS_BADGE: Record<TaskSnapshot['status'], { tone: 'waiting' | 'downloading' | 'paused' | 'success' | 'failed' | 'canceled'; label: string }> = {
-  WAITING: { tone: 'waiting', label: '等待中' },
-  DOWNLOADING: { tone: 'downloading', label: '下载中' },
-  PAUSED: { tone: 'paused', label: '已暂停' },
-  SUCCESS: { tone: 'success', label: '完成' },
-  FAILED: { tone: 'failed', label: '失败' },
-  CANCELED: { tone: 'canceled', label: '已取消' }
+const STATUS_TONE: Record<TaskSnapshot['status'], 'waiting' | 'downloading' | 'paused' | 'success' | 'failed' | 'canceled'> = {
+  WAITING: 'waiting',
+  DOWNLOADING: 'downloading',
+  PAUSED: 'paused',
+  SUCCESS: 'success',
+  FAILED: 'failed',
+  CANCELED: 'canceled'
 }
 
 /** 底部常驻任务栏（docs/09：浏览器下载管理器形态） */
 export function TaskDock() {
+  const { t } = useI18n()
   const tasks = useTaskStore((s) => s.tasks)
   const expanded = useTaskStore((s) => s.expanded)
   const setExpanded = useTaskStore((s) => s.setExpanded)
@@ -63,11 +65,11 @@ export function TaskDock() {
       >
         <Download className="h-4 w-4 text-rose-400" />
         <span className="text-sm text-app">
-          任务
+          {t('task.title')}
           <span className="ml-1.5 text-muted">
-            {active.length > 0 ? `${active.length} 个进行中` : '空闲'}
-            {done > 0 && ` · ${done} 已完成`}
-            {failed > 0 && <span className="text-rose-400"> · {failed} 未成功</span>}
+            {active.length > 0 ? t('task.activeCount', { n: active.length }) : t('task.idle')}
+            {done > 0 && ` · ${t('task.completed', { n: done })}`}
+            {failed > 0 && <span className="text-rose-400"> · {t('task.failed', { n: failed })}</span>}
           </span>
         </span>
         {active.length > 0 && (
@@ -80,9 +82,9 @@ export function TaskDock() {
         )}
         <span className="ml-auto flex items-center gap-2">
           {hasCompleted && (
-            <Button variant="ghost" size="sm" onClick={() => setConfirmClear(true)} title="清除所有已完成/失败/取消的任务">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmClear(true)} title={t("task.clearTitle")}>
               <Trash2 className="h-3.5 w-3.5" />
-              <span className="ml-1">清除已完成</span>
+              <span className="ml-1">{t("task.clearCompleted")}</span>
             </Button>
           )}
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -111,9 +113,9 @@ export function TaskDock() {
       {/* 清除已完成：涉及移除任务记录（不可从 UI 恢复），需确认 */}
       <ConfirmDialog
         open={confirmClear}
-        title="清除已完成的任务？"
-        message={`将移除 ${completedCount} 条已完成/失败/取消的任务记录。此操作不可撤销；已下载到磁盘的文件不受影响。`}
-        confirmLabel="清除"
+        title={t("task.confirmClearTitle")}
+        message={t("task.confirmClearBody", { n: completedCount })}
+        confirmLabel={t("common.confirm")}
         onConfirm={clearCompleted}
         onCancel={() => setConfirmClear(false)}
       />
@@ -129,7 +131,9 @@ function TaskRow({ task }: { task: TaskSnapshot }) {
   const cancel = useTaskStore((s) => s.cancel)
   const retry = useTaskStore((s) => s.retry)
   const remove = useTaskStore((s) => s.remove)
-  const s = STATUS_BADGE[task.status]
+  const { t } = useI18n()
+  const tone = STATUS_TONE[task.status]
+  const statusLabel = t(`task.status_${task.status}`)
   const indeterminate = task.status === 'DOWNLOADING' && task.total === 0
   const running = task.status === 'DOWNLOADING'
 
@@ -150,7 +154,7 @@ function TaskRow({ task }: { task: TaskSnapshot }) {
         <div className="truncate text-[10px] text-subtle">{task.destPath}</div>
       </div>
 
-      <Badge tone={s.tone} className="shrink-0">{s.label}</Badge>
+      <Badge tone={tone} className="shrink-0">{statusLabel}</Badge>
 
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {/* 进行中显示实时进度；完成后保留满格进度条与总量 —— 用户要求
@@ -177,17 +181,17 @@ function TaskRow({ task }: { task: TaskSnapshot }) {
 
       <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         {task.status === 'WAITING' || task.status === 'DOWNLOADING' ? (
-          <Button variant="ghost" size="icon" title="暂停" onClick={() => pause(task.id)}>
+          <Button variant="ghost" size="icon" title={t("task.pause")} onClick={() => pause(task.id)}>
             <Pause className="h-3.5 w-3.5" />
           </Button>
         ) : null}
         {task.status === 'PAUSED' && (
-          <Button variant="ghost" size="icon" title="继续" onClick={() => resume(task.id)}>
+          <Button variant="ghost" size="icon" title={t("task.resume")} onClick={() => resume(task.id)}>
             <Play className="h-3.5 w-3.5" />
           </Button>
         )}
         {(task.status === 'FAILED' || task.status === 'CANCELED') && (
-          <Button variant="ghost" size="icon" title="重试" onClick={() => retry(task.id)}>
+          <Button variant="ghost" size="icon" title={t("common.retry")} onClick={() => retry(task.id)}>
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         )}
@@ -195,19 +199,19 @@ function TaskRow({ task }: { task: TaskSnapshot }) {
           <Button
             variant="ghost"
             size="icon"
-            title="打开所在文件夹"
+            title={t("task.openFolder")}
             onClick={() => void window.instadown.revealFile(task.destPath)}
           >
             <FolderOpen className="h-3.5 w-3.5" />
           </Button>
         )}
         {['WAITING', 'DOWNLOADING', 'PAUSED'].includes(task.status) && (
-          <Button variant="ghost" size="icon" title="取消" onClick={() => cancel(task.id)}>
+          <Button variant="ghost" size="icon" title={t("task.cancel")} onClick={() => cancel(task.id)}>
             <CircleX className="h-3.5 w-3.5" />
           </Button>
         )}
         {['SUCCESS', 'FAILED', 'CANCELED'].includes(task.status) && (
-          <Button variant="ghost" size="icon" title="移除记录" onClick={() => remove(task.id)}>
+          <Button variant="ghost" size="icon" title={t("task.remove")} onClick={() => remove(task.id)}>
             <X className="h-3.5 w-3.5" />
           </Button>
         )}

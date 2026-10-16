@@ -13,6 +13,7 @@ import type { MediaRow } from '@shared/types'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
 import { Button, Input, Skeleton } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
+import { useI18n } from '@/i18n'
 
 // ── Avatar color palette (deterministic by username) ─────────────────────
 const AVATAR_COLORS = [
@@ -45,6 +46,7 @@ function MediaCard({
   /** 应用内查看（不再跳系统浏览器） */
   onOpen: (item: MediaRow) => void
 }) {
+  const { t } = useI18n()
   const thumb = item.thumb_url || item.url
   return (
     <motion.div
@@ -86,7 +88,7 @@ function MediaCard({
       {/* Hover hint */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/20 group-hover:opacity-100">
         <span className="rounded-md bg-black/70 px-2 py-1 text-[11px] text-white backdrop-blur-sm">
-          打开
+          {t('library.openItem')}
         </span>
       </div>
     </motion.div>
@@ -107,6 +109,7 @@ export function LibraryPanel({
   /** 切换到全屏媒体库 */
   onOpenFullscreen: () => void
 }) {
+  const { t } = useI18n()
   const [items, setItems] = useState<MediaRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -136,7 +139,7 @@ export function LibraryPanel({
   const grouped = useMemo(() => {
     const map = new Map<string, MediaRow[]>()
     for (const item of items) {
-      const key = item.author || '未知作者'
+      const key = item.author || t('common.unknownAuthor')
       const arr = map.get(key)
       if (arr) arr.push(item)
       else map.set(key, [item])
@@ -182,11 +185,11 @@ export function LibraryPanel({
                 <FolderOpen className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-base font-semibold text-app">媒体库</h1>
+                <h1 className="text-base font-semibold text-app">{t("library.title")}</h1>
                 <p className="text-xs text-subtle">
-                  共 {totalCount} 个文件
-                  {imageCount > 0 && ` · ${imageCount} 图片`}
-                  {videoCount > 0 && ` · ${videoCount} 视频`}
+                  {t('library.totalFiles', { n: totalCount })}
+                  {imageCount > 0 && ` · ${t('library.imagesSuffix', { n: imageCount })}`}
+                  {videoCount > 0 && ` · ${t('library.videosSuffix', { n: videoCount })}`}
                 </p>
               </div>
             </div>
@@ -195,7 +198,7 @@ export function LibraryPanel({
               <button
                 onClick={onOpenFullscreen}
                 className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-hover hover:text-app"
-                title="切换到全屏媒体库（网格视图 + 更多筛选）"
+                title={t("library.fullscreenTitle")}
               >
                 <Maximize2 className="h-4 w-4" />
               </button>
@@ -215,7 +218,7 @@ export function LibraryPanel({
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索作者…"
+                placeholder={t("library.searchPlaceholder")}
                 className="pl-9"
               />
             </div>
@@ -225,7 +228,7 @@ export function LibraryPanel({
               onClick={() => setShowAll((v) => !v)}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              {showAll ? '按作者分组' : '显示全部'}
+              {showAll ? t('library.groupByAuthor') : t('library.showAll')}
             </Button>
           </div>
 
@@ -276,24 +279,26 @@ function LibrarySkeleton() {
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useI18n()
   return (
     <div className="flex h-full flex-col items-center justify-center">
       <div className="text-sm text-muted">{message}</div>
       <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>
-        重试
+        {t('library.loginWallRetry')}
       </Button>
     </div>
   )
 }
 
 function EmptyLibrary() {
+  const { t } = useI18n()
   return (
     <div className="flex h-full flex-col items-center justify-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-hover">
         <FolderOpen className="h-8 w-8 text-subtle" />
       </div>
-      <h2 className="mt-4 text-base font-medium text-muted">暂无媒体</h2>
-      <p className="mt-1 text-sm text-subtle">下载的媒体会显示在这里</p>
+      <h2 className="mt-4 text-base font-medium text-muted">{t("library.noMedia")}</h2>
+      <p className="mt-1 text-sm text-subtle">{t("library.noMediaHint")}</p>
     </div>
   )
 }
@@ -325,6 +330,7 @@ function GroupedView({
 }
 
 function AuthorSection({ author, items, onOpen }: { author: string; items: MediaRow[]; onOpen: (item: MediaRow) => void }) {
+  const { t } = useI18n()
   const totalWidth = items.reduce((acc, i) => acc + (i.width || 0), 0)
   const totalHeight = items.reduce((acc, i) => acc + (i.height || 0), 0)
   const avgW = items.length > 0 ? Math.round(totalWidth / items.length) : 0
@@ -350,12 +356,12 @@ function AuthorSection({ author, items, onOpen }: { author: string; items: Media
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-semibold text-app">{author}</span>
             <span className="shrink-0 rounded-md bg-surface-hover px-1.5 py-0.5 text-[11px] text-muted">
-              {items.length} 个文件
+              {t('library.filesCount', { n: items.length })}
             </span>
           </div>
           {avgW > 0 && avgH > 0 && (
             <div className="text-xs text-subtle">
-              平均 {avgW}×{avgH}
+              {t('library.avgSize', { w: avgW, h: avgH })}
             </div>
           )}
         </div>

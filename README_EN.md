@@ -8,7 +8,7 @@
 
 **Archive Instagram media to your own disk — completely.**
 
-[![Release](https://img.shields.io/badge/Release-v0.2.0-rose?logo=github)](../../releases)
+[![Release](https://img.shields.io/badge/Release-v0.3.0-rose?logo=github)](../../releases)
 [![Tests](https://img.shields.io/badge/Tests-100%20passing-16a34a?logo=vitest)](#development)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?logo=electron)](#download)
 [![License](https://img.shields.io/badge/License-MIT-8b5cf6)](LICENSE)
@@ -91,6 +91,7 @@ InstaDownloader answers with three design commitments:
 </div>
 
 **Desktop experience**
+- Simplified Chinese / English UI: one click on the globe icon at the top right; defaults to your system language
 - Light / dark / follow-system themes (light by default), with the Windows title-bar buttons following along
 - Smart clipboard detection: post links, profile links, and usernames each get their own prompt
 - Every destructive action (clearing history/cache, logging out) requires confirmation
@@ -112,6 +113,8 @@ Requirements: Windows 10+ / macOS 12+ / mainstream Linux distributions.
 4. Open **Library** from the top-left anytime to browse what you've archived — fullscreen grid view included
 
 All of the above works without registration or login.
+
+**Switch the UI language**: the globe icon at the top right of the main window → choose 简体中文 / English. It follows the system language by default; your choice is remembered, and you can pick “System” to go back to automatic. System notifications and native dialog text follow the UI language.
 
 ## How it works
 

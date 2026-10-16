@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import type { MediaItem } from '@shared/types'
 import { useTaskStore } from '@/stores/tasks'
 import { useLibraryStore } from '@/stores/library'
+import { i18nT } from '@/i18n'
 
 export function useContextMenuActions() {
   const downloadItems = useCallback(async (targets: MediaItem[]) => {
@@ -31,18 +32,18 @@ export function useContextMenuActions() {
     }))
     try {
       const { taskIds } = await window.instadown.addDownload(payload)
-      toast.success(`已加入下载队列：${taskIds.length} 项`)
+      toast.success(i18nT('download.queued', { n: taskIds.length }))
     } catch (e) {
-      toast.error(`加入队列失败：${(e as Error).message}`)
+      toast.error(`${i18nT('download.queueFailed')}：${(e as Error).message}`)
     }
   }, [])
 
   const onCopyLink = useCallback(async (item: MediaItem) => {
     try {
       await navigator.clipboard.writeText(item.url)
-      toast.success('链接已复制到剪贴板')
+      toast.success(i18nT('grid.linkCopied'))
     } catch {
-      toast.error('复制失败')
+      toast.error(i18nT('grid.copyFailed'))
     }
   }, [])
 
@@ -64,7 +65,7 @@ export function useContextMenuActions() {
     if (task?.destPath) {
       void window.instadown.revealFile(task.destPath)
     } else {
-      toast.error('未找到文件路径')
+      toast.error(i18nT('grid.noFilePath'))
     }
   }, [])
 

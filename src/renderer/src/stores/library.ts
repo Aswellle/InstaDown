@@ -82,7 +82,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   doParse: async (url) => {
     set({
-      view: { mode: 'loading', hint: '正在解析…' },
+      view: { mode: 'loading', hint: 'home.parsing' },
       selected: new Set(),
       order: [],
       lastToggled: null

@@ -1,14 +1,15 @@
 import { Aperture, MousePointerClick, Download, FolderTree } from 'lucide-react'
 import { motion } from 'framer-motion'
-
-const STEPS = [
-  { icon: Aperture, title: '粘贴链接', desc: '帖子 / Reels / 主页链接，或直接输入用户名' },
-  { icon: MousePointerClick, title: '预览并选择', desc: '点击卡片选择，Shift 连选，双击放大预览' },
-  { icon: Download, title: '批量下载', desc: '最高质量原档保存，断点续传 · 自动归类' },
-  { icon: FolderTree, title: '本地管理', desc: '按 用户名/日期/类型 归档，可随时回访' }
-]
+import { useI18n } from '@/i18n'
 
 export function EmptyState({ onExample }: { onExample: (text: string) => void }) {
+  const { t } = useI18n()
+  const STEPS = [
+    { icon: Aperture, title: t('home.steps.paste'), desc: t('home.steps.pasteDesc') },
+    { icon: MousePointerClick, title: t('home.steps.preview'), desc: t('home.steps.previewDesc') },
+    { icon: Download, title: t('home.steps.batch'), desc: t('home.steps.batchDesc') },
+    { icon: FolderTree, title: t('home.steps.manage'), desc: t('home.steps.manageDesc') }
+  ]
   return (
     <div className="flex h-full flex-col items-center justify-center px-8 pb-16">
       <motion.div
@@ -20,16 +21,13 @@ export function EmptyState({ onExample }: { onExample: (text: string) => void })
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-400 shadow-lg shadow-rose-500/20">
           <Aperture className="h-8 w-8 text-white" />
         </div>
-        <h1 className="mt-5 text-xl font-semibold text-app">本地优先的 Instagram 媒体归档</h1>
-        <p className="mt-2 max-w-md text-sm text-muted">
-          支持图片、Carousel 多图、Reels 视频与 Stories（需登录会话）。
-          全部解析在本地完成，不上传任何数据。
-        </p>
+        <h1 className="mt-5 text-xl font-semibold text-app">{t('home.tagline')}</h1>
+        <p className="mt-2 max-w-md text-sm text-muted">{t('home.subtitle')}</p>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-subtle">
-          试试：
+          {t('home.tryLabel')}
           <Chip onClick={() => onExample('instagram')}>instagram</Chip>
-          <Chip onClick={() => onExample('https://www.instagram.com/instagram/')}>@instagram 主页</Chip>
-          <Chip onClick={() => onExample('https://www.instagram.com/p/B1LbfVPlwIA/')}>示例帖子</Chip>
+          <Chip onClick={() => onExample('https://www.instagram.com/instagram/')}>@instagram</Chip>
+          <Chip onClick={() => onExample('https://www.instagram.com/p/B1LbfVPlwIA/')}>Demo</Chip>
         </div>
       </motion.div>
 

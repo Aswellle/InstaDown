@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ImageOff } from 'lucide-react'
+import { i18nT } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 /**
@@ -104,7 +105,7 @@ export function SmartImage({
           className,
           fallbackClassName
         )}
-        title={failed ? '媒体链接已失效（Instagram CDN 链接会过期）' : undefined}
+        title={failed ? i18nT('image.expiredTooltip') : undefined}
       >
         <ImageOff className="h-5 w-5" />
       </div>

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast, Toaster } from 'sonner'
 import { AlertTriangle, RotateCcw, History, LayoutGrid, LogIn, Settings, ChevronDown, ArrowLeft } from 'lucide-react'
-import { ERROR_TEXT } from '@shared/types'
 import type { MediaItem } from '@shared/types'
 import { useLibraryStore, currentItems } from '@/stores/library'
 import { useTaskStore } from '@/stores/tasks'
 import { useSettingsStore } from '@/stores/settings'
 import { useIgAccountStore } from '@/stores/ig-account'
+import { useI18n, i18nT } from '@/i18n'
 import { TopBar } from '@/components/TopBar'
 import { MediaGrid } from '@/components/MediaGrid'
 import { ProfileHeader, ProfileHeaderSkeleton } from '@/components/ProfileHeader'
@@ -50,6 +50,7 @@ export default function App() {
   useApplyTheme()
   const isDark = useIsDark()
   const themeMode = useSettingsStore((s) => s.settings?.theme ?? 'light')
+  const { t } = useI18n()
 
   // 同步原生窗口外观（Windows 窗口控制按钮区随主题）。
   // 传原始模式：'system' 时由主进程按系统偏好解析，且系统主题变化时
@@ -118,7 +119,7 @@ export default function App() {
 
       const text = e.dataTransfer?.getData('text/plain') || e.dataTransfer?.getData('text/uri-list') || ''
       if (text && isProbablyIgUrl(text)) {
-        toast('已检测到链接，正在解析…')
+        toast(t('clipboard.dropDetected'))
         void parse(text).catch((err) => toast.error((err as Error).message))
       }
     }
@@ -144,12 +145,14 @@ export default function App() {
     const offTask = window.instadown.onTaskEvent(applyEvent)
     const offWorker = window.instadown.onWorkerStatus((status) => {
       setWorkerReady(status === 'ready')
-      if (status === 'down') toast.error('解析服务异常，正在重启…')
+      if (status === 'down') toast.error(i18nT('download.workerDown'))
     })
     return () => {
       offTask()
       offWorker()
     }
+    // t 不进依赖：worker 状态事件不因语言切换重订阅（文案在下次触发时取最新值）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadTasks, loadSettings, applyEvent, setWorkerReady])
 
   const items = currentItems(view)
@@ -160,7 +163,7 @@ export default function App() {
     try {
       setLibRows(await window.instadown.getLibrary())
     } catch (e) {
-      toast.error(`加载媒体库失败：${(e as Error).message}`)
+      toast.error(`${t('libFull.loadFailed')}：${(e as Error).message}`)
     } finally {
       setLibLoading(false)
     }
@@ -209,9 +212,9 @@ export default function App() {
       }))
       try {
         const { taskIds } = await window.instadown.addDownload(payload)
-        toast.success(`已加入下载队列：${taskIds.length} 项`)
+        toast.success(t('download.queued', { n: taskIds.length }))
       } catch (e) {
-        toast.error(`加入队列失败：${(e as Error).message}`)
+        toast.error(`${t('download.queueFailed')}：${(e as Error).message}`)
       }
     },
     []
@@ -233,38 +236,41 @@ export default function App() {
     const info = classifyIgUrl(text)
     const parseNow = () => void useLibraryStore.getState().parse(text)
     if (info.kind === 'post' || info.kind === 'reel' || info.kind === 'tv') {
-      toast.info('检测到帖子链接', {
-        description: `${info.kind === 'reel' ? 'Reels' : '帖子'} · ${info.shortcode}`,
-        action: { label: '立即解析', onClick: parseNow },
+      toast.info(t('clipboard.post'), {
+        description: t('clipboard.postDesc', {
+          kind: info.kind === 'reel' ? 'Reels' : t('parse.post'),
+          shortcode: info.shortcode ?? ''
+        }),
+        action: { label: t('clipboard.postAction'), onClick: parseNow },
         duration: 6000
       })
     } else if (info.kind === 'profile') {
-      toast.info('检测到主页链接', {
-        description: `@${info.username} 的主页媒体，可批量浏览与下载`,
-        action: { label: '打开主页', onClick: parseNow },
+      toast.info(t('clipboard.profile'), {
+        description: t('clipboard.profileDesc', { username: info.username ?? '' }),
+        action: { label: t('clipboard.profileAction'), onClick: parseNow },
         duration: 6000
       })
     } else if (info.kind === 'story') {
-      toast.info('检测到 Stories 链接', {
-        description: `@${info.username} 的限时动态（需要登录会话）`,
-        action: { label: '立即解析', onClick: parseNow },
+      toast.info(t('clipboard.story'), {
+        description: t('clipboard.storyDesc', { username: info.username ?? '' }),
+        action: { label: t('clipboard.postAction'), onClick: parseNow },
         duration: 6000
       })
     } else if (info.kind === 'highlight') {
-      toast.info('检测到合集（Highlights）链接', {
-        description: '精选合集暂不支持解析',
+      toast.info(t('clipboard.highlight'), {
+        description: t('clipboard.highlightDesc'),
         duration: 5000
       })
     } else {
       // 裸用户名或其它 IG 链接
       const isBareName = /^[A-Za-z0-9._]{1,30}$/.test(text.trim())
-      toast.info(isBareName ? '检测到 Instagram 用户名' : '检测到 Instagram 链接', {
+      toast.info(isBareName ? t('clipboard.bareName') : t('clipboard.generic'), {
         description: text.slice(0, 80),
-        action: { label: '立即解析', onClick: parseNow },
+        action: { label: t('clipboard.postAction'), onClick: parseNow },
         duration: 6000
       })
     }
-  }, [])
+  }, [t])
 
   // 键盘：Ctrl+A 全选 / Esc 逐级返回 / Ctrl+Enter 下载
   useEffect(() => {
@@ -327,9 +333,9 @@ export default function App() {
     }))
     try {
       const { taskIds } = await window.instadown.addDownload(payload)
-      toast.success(`已加入下载队列：${taskIds.length} 项`)
+      toast.success(t('download.queued', { n: taskIds.length }))
     } catch (e) {
-      toast.error(`加入队列失败：${(e as Error).message}`)
+      toast.error(`${t('download.queueFailed')}：${(e as Error).message}`)
     }
   }
 
@@ -346,16 +352,16 @@ export default function App() {
       if (res.ok) {
         setIgLoggedIn({ username: res.username ?? '', avatar: res.avatar ?? '' })
         toast.success(
-          res.username ? `已登录 Instagram：@${res.username}` : 'Instagram 登录成功',
-          { description: '会话已加密保存在本机，Stories 与主页归档已可用' }
+          res.username ? t('settings.loginOk', { name: res.username }) : t('settings.loginOkPlain'),
+          { description: t('login.successDesc') }
         )
         const lastInput = view.mode === 'error' ? view.lastInput : undefined
         if (lastInput) handleParse(lastInput)
       } else if (!res.cancelled) {
-        toast.error(res.message ?? '登录未完成，请重试')
+        toast.error(res.message ?? t('login.incomplete'))
       }
     } catch (e) {
-      toast.error(`登录失败：${(e as Error).message}`)
+      toast.error(`${t('settings.loginError')}：${(e as Error).message}`)
     }
   }
 
@@ -372,11 +378,11 @@ export default function App() {
   const onCopyLink = useCallback(async (item: MediaItem) => {
     try {
       await navigator.clipboard.writeText(item.url)
-      toast.success('链接已复制到剪贴板')
+      toast.success(t('grid.linkCopied'))
     } catch {
-      toast.error('复制失败')
+      toast.error(t('grid.copyFailed'))
     }
-  }, [])
+  }, [t])
 
   const onDownloadItem = useCallback(
     (item: MediaItem) => {
@@ -397,9 +403,9 @@ export default function App() {
     if (task?.destPath) {
       void window.instadown.revealFile(task.destPath)
     } else {
-      toast.error('未找到文件路径')
+      toast.error(t('grid.noFilePath'))
     }
-  }, [])
+  }, [t])
 
   return (
     <div id="main-container" className="relative flex h-full flex-col">
@@ -424,14 +430,14 @@ export default function App() {
         <div className="titlebar-safe flex w-full items-center gap-2 px-4">
           <button
             className="no-drag rounded-md p-2 text-muted transition-colors hover:bg-surface-hover hover:text-app"
-            title="下载历史"
+            title={t('topBar.history')}
             onClick={() => { setHistoryOpen(true); setLibraryOpen(false) }}
           >
             <History className="h-4 w-4" />
           </button>
           <button
             className="no-drag rounded-md p-2 text-muted transition-colors hover:bg-surface-hover hover:text-app"
-            title="媒体库"
+            title={t('topBar.library')}
             onClick={() => { setLibraryOpen(true); setHistoryOpen(false) }}
           >
             <LayoutGrid className="h-4 w-4" />
@@ -440,7 +446,7 @@ export default function App() {
               会被 Windows 原生窗口控制按钮遮挡） */}
           <button
             className="no-drag rounded-md p-2 text-muted transition-colors hover:bg-surface-hover hover:text-app"
-            title="设置"
+            title={t('topBar.settings')}
             onClick={() => setSettingsOpen(true)}
           >
             <Settings className="h-4 w-4" />
@@ -482,7 +488,7 @@ export default function App() {
                 <ProfileHeaderSkeleton />
                 <GridSkeleton />
                 <div className="mt-4 flex items-center justify-center gap-2 text-sm text-subtle">
-                  <Spinner /> {view.hint}
+                  <Spinner /> {t(view.hint)}
                 </div>
               </div>
             )}
@@ -490,9 +496,11 @@ export default function App() {
             {view.mode === 'error' && (
               <div className="mx-auto mt-24 flex max-w-md flex-col items-center text-center">
                 <AlertTriangle className="h-10 w-10 text-amber-400" />
-                <h2 className="mt-4 text-base font-semibold text-app">解析失败</h2>
+                <h2 className="mt-4 text-base font-semibold text-app">{t('parse.failed')}</h2>
                 <p className="mt-2 text-sm text-muted">
-                  {ERROR_TEXT[view.error.code] ?? view.error.message}
+                  {t(`error.${view.error.code}`) !== `error.${view.error.code}`
+                    ? t(`error.${view.error.code}`)
+                    : view.error.message}
                 </p>
 
                 {/* 登录墙：直接提供登录入口，无需用户自己去设置里找 */}
@@ -503,7 +511,7 @@ export default function App() {
                     className="mt-4"
                     onClick={() => void handleIgLogin()}
                   >
-                    <LogIn className="h-4 w-4" /> 登录 Instagram
+                    <LogIn className="h-4 w-4" /> {t('parse.login')}
                   </Button>
                 )}
 
@@ -514,7 +522,7 @@ export default function App() {
                     className="mt-2"
                     onClick={() => handleParse(view.lastInput!)}
                   >
-                    <RotateCcw className="h-4 w-4" /> 重试
+                    <RotateCcw className="h-4 w-4" /> {t('parse.retry')}
                   </Button>
                 )}
               </div>
@@ -524,9 +532,9 @@ export default function App() {
               <button
                 onClick={goHome}
                 className="mb-3 flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
-                title="返回主页（Esc 也可）"
+                title={t('parse.backTooltip')}
               >
-                <ArrowLeft className="h-3.5 w-3.5" /> 返回
+                <ArrowLeft className="h-3.5 w-3.5" /> {t('parse.back')}
               </button>
             )}
 
@@ -551,9 +559,9 @@ export default function App() {
                       )}
                     </div>
                     <div className="text-xs text-subtle">
-                      {view.collection.source.kind === 'story' ? 'Stories' : '帖子'}
+                      {view.collection.source.kind === 'story' ? t('parse.stories') : t('parse.post')}
                       {view.collection.source.shortcode ? ` · ${view.collection.source.shortcode}` : ''} ·{' '}
-                      {view.collection.items.length} 个媒体
+                      {t('parse.mediaCount', { n: view.collection.items.length })}
                     </div>
                   </div>
                   {view.collection.caption && (
@@ -599,7 +607,7 @@ export default function App() {
                 <div className="flex flex-col items-center gap-2 pb-4">
                   {view.page.loadingMore && (
                     <div className="flex items-center gap-2 text-sm text-subtle">
-                      <Spinner /> 正在加载…
+                      <Spinner /> {t('parse.loadingMore')}
                     </div>
                   )}
                   {!view.page.loadingMore && view.page.cursor && (
@@ -611,16 +619,16 @@ export default function App() {
                           void loadMore().catch((e) => toast.error((e as Error).message))
                         }
                       >
-                        <ChevronDown className="h-4 w-4" /> 再加载 10 条
+                        <ChevronDown className="h-4 w-4" /> {t('parse.loadMore')}
                       </Button>
                       <span className="text-[11px] text-subtle">
-                        已加载 {view.page.items.length} 条
+                        {t('parse.loadedCount', { n: view.page.items.length })}
                       </span>
                     </>
                   )}
                   {!view.page.loadingMore && !view.page.cursor && view.page.items.length > 0 && (
                     <span className="text-[11px] text-subtle">
-                      已加载全部 {view.page.items.length} 条
+                      {t('parse.loadedAll', { n: view.page.items.length })}
                     </span>
                   )}
                 </div>
@@ -648,9 +656,9 @@ export default function App() {
       {/* 经由账号的功能（Stories/Highlights）解析前：账号风险确认 */}
       <ConfirmDialog
         open={!!accountConfirm}
-        title="此内容需要使用你的 Instagram 会话"
-        message="Stories / 精选合集只能经由登录账号查看（IG 官方机制）。本次访问会以你的账号身份进行，IG 可能将其识别为账号活动；如担心风险可选择取消，回退方式是清除会话（设置 → 账号）。"
-        confirmLabel="继续访问"
+        title={t('accountConfirm.title')}
+        message={t('accountConfirm.body')}
+        confirmLabel={t('accountConfirm.proceed')}
         onConfirm={() => void confirmAccountUse()}
         onCancel={cancelAccountUse}
       />
@@ -715,7 +723,7 @@ export default function App() {
             transition={{ duration: 0.15 }}
             className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-lg border-2 border-dashed border-blue-400 bg-blue-500/10"
           >
-            <div className="text-lg font-medium text-blue-300">松开以上传链接</div>
+            <div className="text-lg font-medium text-blue-300">{t('drag.dropHere')}</div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -21,6 +21,7 @@ import type { MediaRow } from '@shared/types'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
 import { Button, Checkbox, Input } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
+import { useI18n } from '@/i18n'
 
 /**
  * 全屏媒体库（独立的视觉模块）。
@@ -34,11 +35,13 @@ import { SmartImage } from '@/components/ui/smart-image'
 type TypeFilter = 'all' | 'image' | 'video'
 type SortKey = 'date-desc' | 'date-asc' | 'author' | 'size-desc'
 
-const SORT_LABEL: Record<SortKey, string> = {
-  'date-desc': '最新优先',
-  'date-asc': '最早优先',
-  author: '按作者',
-  'size-desc': '尺寸优先'
+function sortLabel(sort: SortKey, t: (p: string) => string): string {
+  switch (sort) {
+    case 'date-desc': return t('libFull.sortNewest')
+    case 'date-asc': return t('libFull.sortOldest')
+    case 'author': return t('libFull.sortAuthor')
+    case 'size-desc': return t('libFull.sortSize')
+  }
 }
 
 export function LibraryFullscreen({
@@ -62,6 +65,7 @@ export function LibraryFullscreen({
   onDownloadMany: (items: MediaRow[]) => void
   onRefresh: () => void
 }) {
+  const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [author, setAuthor] = useState<string>('all')
@@ -95,7 +99,7 @@ export function LibraryFullscreen({
   const authors = useMemo(() => {
     const counts = new Map<string, number>()
     for (const it of items) {
-      const a = it.author || '未知作者'
+      const a = it.author || t('common.unknownAuthor')
       counts.set(a, (counts.get(a) ?? 0) + 1)
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1])
@@ -104,7 +108,7 @@ export function LibraryFullscreen({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     let list = items
-    if (author !== 'all') list = list.filter((i) => (i.author || '未知作者') === author)
+    if (author !== 'all') list = list.filter((i) => (i.author || t('common.unknownAuthor')) === author)
     if (typeFilter !== 'all') list = list.filter((i) => i.type === typeFilter)
     if (q) {
       list = list.filter(
@@ -167,16 +171,16 @@ export function LibraryFullscreen({
             <button
               onClick={onGoHome}
               className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-app px-3 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
-              title="返回主页面（同时收起全屏库）"
+              title={t("libFull.back")}
             >
-              <ArrowLeft className="h-4 w-4" /> 返回主页
+              <ArrowLeft className="h-4 w-4" /> {t("libFull.back")}
             </button>
 
             <Grid2X2 className="h-5 w-5 shrink-0 text-rose-500" />
             <div className="shrink-0">
-              <div className="text-sm font-semibold text-app">媒体库</div>
+              <div className="text-sm font-semibold text-app">{t("libFull.title")}</div>
               <div className="text-[11px] text-subtle">
-                {items.length} 项 · 图片 {imgCount} · 视频 {vidCount}
+                {t("libFull.statsLine", { total: items.length, img: imgCount, vid: vidCount })}
               </div>
             </div>
 
@@ -185,7 +189,7 @@ export function LibraryFullscreen({
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索作者 / shortcode / 文件名…"
+                placeholder={t("libFull.searchAll")}
                 className="h-9 pl-9"
               />
             </div>
@@ -194,9 +198,9 @@ export function LibraryFullscreen({
             <div className="flex shrink-0 items-center gap-1 rounded-lg border border-app p-0.5">
               {(
                 [
-                  ['all', '全部', null],
-                  ['image', '图片', ImageIcon],
-                  ['video', '视频', Film]
+                  ['all', t('libFull.filterAll'), null],
+                  ['image', t('libFull.filterImage'), ImageIcon],
+                  ['video', t('libFull.filterVideo'), Film]
                 ] as Array<[TypeFilter, string, typeof ImageIcon | null]>
               ).map(([value, label, Icon]) => (
                 <button
@@ -223,11 +227,11 @@ export function LibraryFullscreen({
                   'flex h-9 items-center gap-1.5 rounded-lg border border-app px-2.5 text-xs transition-colors hover:bg-surface-hover',
                   author !== 'all' && 'border-rose-500/60 text-app'
                 )}
-                title="按作者过滤"
+                title={t("libFull.sortAuthor")}
               >
                 <UserIcon className="h-3.5 w-3.5" />
                 <span className="max-w-28 truncate">
-                  {author === 'all' ? '全部作者' : author}
+                  {author === 'all' ? t('libFull.allAuthors') : author}
                 </span>
               </button>
               <AnimatePresence>
@@ -240,7 +244,7 @@ export function LibraryFullscreen({
                     className="absolute right-0 top-10 z-10 max-h-80 w-56 overflow-y-auto rounded-xl border border-app bg-surface py-1 shadow-2xl"
                   >
                     <AuthorOption
-                      label={`全部作者（${items.length}）`}
+                      label={`${t('libFull.allAuthors')}（${items.length}）`}
                       active={author === 'all'}
                       onClick={() => {
                         setAuthor('all')
@@ -271,22 +275,22 @@ export function LibraryFullscreen({
                 setSort(order[(i + 1) % order.length])
               }}
               className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-app px-2.5 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
-              title="切换排序方式"
+              title={t("libFull.sortAuthor")}
             >
               <ArrowUpDown className="h-3.5 w-3.5" />
-              {SORT_LABEL[sort]}
+              {sortLabel(sort, t)}
             </button>
 
             <div className="flex shrink-0 items-center gap-1">
               {/* 快捷键/操作提示（隐藏操作的可见化） */}
-              <Button variant="ghost" size="icon" onClick={() => setHelpOpen(true)} title="操作说明（快捷键）">
+              <Button variant="ghost" size="icon" onClick={() => setHelpOpen(true)} title={t("libFull.help")}>
                 <CircleHelp className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={onRefresh} title="刷新媒体库">
+              <Button variant="ghost" size="icon" onClick={onRefresh} title={t("libFull.refresh")}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
-              <Button variant="secondary" size="sm" onClick={onClose} title="收起全屏库，回到之前页面 (Esc)">
-                <Minimize2 className="h-4 w-4" /> 收起
+              <Button variant="secondary" size="sm" onClick={onClose} title={t("libFull.escHint")}>
+                <Minimize2 className="h-4 w-4" /> {t("libFull.collapse")}
               </Button>
             </div>
           </div>
@@ -295,17 +299,17 @@ export function LibraryFullscreen({
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex h-full items-center justify-center text-sm text-subtle">
-                加载中…
+                {t("common.loading")}
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-subtle">
                 <Grid2X2 className="mb-3 h-10 w-10" />
                 <p className="text-sm">
-                  {items.length === 0 ? '媒体库为空，下载的媒体会出现在这里' : '没有匹配的内容'}
+                  {items.length === 0 ? t('libFull.empty') : t('libFull.noMatch')}
                 </p>
                 {items.length > 0 && (
                   <Button variant="outline" size="sm" className="mt-3" onClick={() => { setSearch(''); setTypeFilter('all'); setAuthor('all') }}>
-                    清除过滤条件
+                    {t("libFull.clearFilters")}
                   </Button>
                 )}
               </div>
@@ -339,17 +343,17 @@ export function LibraryFullscreen({
                 <button
                   onClick={selectAllFiltered}
                   className="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-app"
-                  title="全选当前筛选结果 (再点取消)"
+                  title={t("libFull.selectAll")}
                 >
                   {selected.size === filtered.length && filtered.length > 0 ? (
                     <CheckSquare className="h-4 w-4 text-rose-500" />
                   ) : (
                     <Square className="h-4 w-4" />
                   )}
-                  {selected.size === filtered.length && filtered.length > 0 ? '取消全选' : '全选结果'}
+                  {selected.size === filtered.length && filtered.length > 0 ? t('libFull.clearSelection') : t('libFull.selectAll')}
                 </button>
                 <span className="text-xs text-subtle">
-                  {selected.size > 0 ? `已选 ${selected.size} / ${filtered.length}` : `共 ${filtered.length} 项`}
+                  {selected.size > 0 ? t('libFull.selectedOf', { sel: selected.size, total: filtered.length }) : t('libFull.totalItems', { n: filtered.length })}
                 </span>
                 <div className="ml-auto flex items-center gap-2">
                   {selected.size > 0 && (
@@ -362,7 +366,7 @@ export function LibraryFullscreen({
                       }}
                     >
                       <Download className="h-4 w-4" />
-                      下载所选（{selected.size}）
+                      {t("libFull.downloadSelected", { n: selected.size })}
                     </Button>
                   )}
                 </div>
@@ -403,15 +407,16 @@ function AuthorOption({
 
 /** 操作说明弹层：把快捷键与鼠标操作从"隐藏知识"变成可见提示 */
 function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useI18n()
   if (!open) return null
   const rows: Array<[string, string]> = [
-    ['单击卡片', '打开应用内查看器（图片/视频都在应用内，不跳浏览器）'],
-    ['Ctrl/Shift + 单击', '多选卡片（再点取消）；多选态下单击即切换选中'],
-    ['底部「全选结果」', '选中当前筛选出的全部内容，可一键批量下载'],
-    ['← → 方向键', '查看器内上一张 / 下一张'],
-    ['Enter', '查看器内下载当前媒体'],
-    ['Esc', '逐级退出：帮助/下拉 → 清除多选 → 关闭查看器 → 收起全屏库'],
-    ['筛选 + 排序', '类型（全部/图片/视频）、作者下拉、四种排序循环切换'],
+    [t('libFull.helpClick'), t('libFull.helpClickDesc')],
+    [t('libFull.helpMulti'), t('libFull.helpMultiDesc')],
+    [t('libFull.helpSelectAll'), t('libFull.helpSelectAllDesc')],
+    [t('libFull.helpArrows'), t('libFull.helpPrevNext')],
+    ['Enter', t('libFull.helpEnter')],
+    ['Esc', t('libFull.helpEsc')],
+    [t('libFull.filterAll') + ' + ' + t('libFull.sortAuthor'), t('libFull.helpFilterSort')],
   ]
   return (
     <div
@@ -422,7 +427,7 @@ function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     >
       <div className="w-full max-w-md rounded-2xl border border-app bg-surface p-5 shadow-2xl">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-app">操作说明</h3>
+          <h3 className="text-sm font-semibold text-app">{t("libFull.helpTitle")}</h3>
           <button
             onClick={onClose}
             className="rounded-md p-1 text-subtle hover:bg-surface-hover hover:text-app"
@@ -460,6 +465,7 @@ function FullscreenCard({
   onToggle: (additive: boolean) => void
   onOpen: () => void
 }) {
+  const { t } = useI18n()
   const thumb = item.thumb_url || item.url
   return (
     <motion.div
@@ -511,7 +517,7 @@ function FullscreenCard({
       {/* 底部信息（固定深色遮罩 → 字面量白） */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-2.5 pb-2 pt-6">
         <div className="truncate text-[11px] font-medium text-white">
-          {item.author || '未知作者'}
+          {item.author || t('common.unknownAuthor')}
         </div>
         <div className="truncate text-[10px] text-white/70">
           {item.width && item.height ? `${item.width}×${item.height} · ` : ''}
