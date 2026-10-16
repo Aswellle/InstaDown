@@ -1,5 +1,7 @@
 <div align="center">
 
+[简体中文](README.md) | [English](README_EN.md)
+
 <img src="build/icon-256.png" width="120" alt="InstaDownloader logo" />
 
 # InstaDownloader
@@ -99,7 +101,7 @@ InstaDownloader 的答案是三个设计承诺：
 
 | 平台 | 获取方式 |
 |------|----------|
-| **Windows** | [Releases](../../releases) 下载 `InstaDownloader Setup x.x.x.exe`（NSIS 安装器） |
+| **Windows** | [Releases](../../releases) 下载 `InstaDownloader-Setup-x.x.x.exe`（NSIS 安装器） |
 | **macOS / Linux** | 推送 `v*` 标签后由 CI 自动构建 DMG / AppImage（见 [发布流程](#发布流程)） |
 
 系统要求：Windows 10+ / macOS 12+ / 主流 Linux 发行版。
