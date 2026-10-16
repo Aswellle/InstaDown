@@ -12,6 +12,9 @@ permissions:
 jobs:
   release:
     strategy:
+      # 一个平台失败不取消其它平台 —— 否则 Windows 成功、macOS 失败时
+      # 连 Windows 的产物都会被 fail-fast 一并取消（实际踩过）。
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
@@ -40,18 +43,50 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # 打包但不上传：发布交给下面的 gh release upload。
+      # electron-builder 自带的 GitHub publisher 在 CI 上不产出任何资产
+      # （工作流显示成功、Release 页却没有任何安装包），改用 GitHub 官方
+      # CLI 上传，行为可预期、失败有明确报错。
       - name: Build & package
-        shell: bash
-        # 直接调用 electron-builder（不再用已归档的 samuelmeuli/action-electron-builder：
-        # 它对未知输入名直接报错 —— 曾因 gh_token vs github_token 让构建在第一步就失败）。
-        # 打 tag 时用 --publish always 上传到 GitHub Release；否则只做本地打包验证。
         run: |
           npm run build
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            npx electron-builder --config electron-builder.yml --publish always
-          else
-            npx electron-builder --config electron-builder.yml
-          fi
+          npx electron-builder --config electron-builder.yml --publish never
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+
+      - name: Upload installers as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          # 单层 * 只匹配 release/<version>/ 下的安装器，
+          # 不会把 win-unpacked/ 里的应用二进制（数百 MB）一起收进来
+          path: |
+            release/*/*.exe
+            release/*/*.dmg
+            release/*/*.AppImage
+            release/*/*.yml
+            !release/*/builder-*.yml
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+        run: |
+          set -euo pipefail
+          # 首次运行创建 Release（已存在则忽略）；随后把本平台产物挂上去
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+          # 只挑最终产物：安装器 + 自动更新元数据。
+          # -maxdepth 2 = 仅 release/<version>/ 顶层，排除 *-unpacked/ 与 mac/ 目录
+          files=$(find release -maxdepth 2 -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.yml' \) ! -name 'builder-*.yml')
+          echo "uploading:"; echo "$files"
+          # 同名资产重复上传会报错：先删旧再传（重跑 tag 场景）
+          for f in $files; do
+            gh release delete-asset "$GITHUB_REF_NAME" "$(basename "$f")" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+          done
+          for f in $files; do
+            gh release upload "$GITHUB_REF_NAME" "$f" --repo "$GITHUB_REPOSITORY" --clobber
+          done
