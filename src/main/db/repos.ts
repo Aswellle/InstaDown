@@ -1,4 +1,8 @@
 import type { DB } from './database'
+import type { MediaRow } from '@shared/types'
+
+/** 媒体行以共享契约为准（含媒体库专用的 path / file_size） */
+export type { MediaRow }
 
 export interface TaskRow {
   id: string
@@ -17,22 +21,6 @@ export interface TaskRow {
   error: string | null
   created_at: number
   updated_at: number
-}
-
-export interface MediaRow {
-  id: string
-  platform: string
-  shortcode: string | null
-  author: string | null
-  url: string
-  thumb_url: string | null
-  type: 'image' | 'video'
-  width: number | null
-  height: number | null
-  duration: number | null
-  caption: string | null
-  taken_at: number | null
-  created_at: number
 }
 
 export interface HistoryRow {

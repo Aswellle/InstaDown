@@ -17,8 +17,6 @@ export interface LibraryPrefs {
   sort: LibrarySort
   /** 全屏：类型筛选 */
   typeFilter: LibraryTypeFilter
-  /** 全屏：筛选栏是否折叠 */
-  filtersCollapsed: boolean
 }
 
 const KEY = 'instadown.library.prefs'
@@ -26,8 +24,7 @@ const KEY = 'instadown.library.prefs'
 const DEFAULTS: LibraryPrefs = {
   viewMode: 'grouped',
   sort: 'date-desc',
-  typeFilter: 'all',
-  filtersCollapsed: false
+  typeFilter: 'all'
 }
 
 export function loadLibraryPrefs(): LibraryPrefs {
@@ -44,8 +41,7 @@ export function loadLibraryPrefs(): LibraryPrefs {
       typeFilter:
         parsed.typeFilter === 'image' || parsed.typeFilter === 'video'
           ? parsed.typeFilter
-          : 'all',
-      filtersCollapsed: parsed.filtersCollapsed === true
+          : 'all'
     }
   } catch {
     return { ...DEFAULTS }
