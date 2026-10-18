@@ -338,9 +338,6 @@ export const zhCN = {
     login: '登录 Instagram',
     relogin: '重新登录',
     logout: '退出登录',
-    sessionCookie: '会话状态',
-    sessionValid: '会话有效',
-    sessionInvalid: '未检测到有效会话',
     advanced: '高级',
     pasteCookie: '手动粘贴会话 Cookie',
     pasteCookieHint:
@@ -413,6 +410,8 @@ export const zhCN = {
     sessionStatus: '会话状态',
     statusPersisted: '已加密保存到本机',
     statusPartition: '浏览器分区已登录',
+    sessionValid: '会话有效',
+    sessionInvalid: '未检测到有效会话',
     statusEncryptedNote:
       '会话经系统密钥（safeStorage）加密后仅存于本机，不会上传到任何服务器。凭据始终直接提交给 Instagram，本应用不接触密码。',
     relogin: '重新登录',

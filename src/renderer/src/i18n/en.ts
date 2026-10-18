@@ -322,9 +322,6 @@ export const en = {
     login: 'Log in to Instagram',
     relogin: 'Log in again',
     logout: 'Log out',
-    sessionCookie: 'Session state',
-    sessionValid: 'Session valid',
-    sessionInvalid: 'No valid session detected',
     advanced: 'Advanced',
     pasteCookie: 'Paste session cookie manually',
     pasteCookieHint:
@@ -398,6 +395,8 @@ export const en = {
     sessionStatus: 'Session status',
     statusPersisted: 'Encrypted & stored locally',
     statusPartition: 'Browser partition logged in',
+    sessionValid: 'Session valid',
+    sessionInvalid: 'No valid session detected',
     statusEncryptedNote:
       'The session is encrypted with the OS keychain (safeStorage) and stays on this machine — never uploaded to any server. Credentials always go straight to Instagram; this app never touches your password.',
     relogin: 'Log in again',
