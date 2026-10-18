@@ -38,21 +38,19 @@ function avatarColor(name: string): string {
 // ── Media card ──────────────────────────────────────────────────────────
 function MediaCard({
   item,
-  index,
   onOpen
 }: {
   item: MediaRow
-  index: number
   /** 应用内查看（不再跳系统浏览器） */
   onOpen: (item: MediaRow) => void
 }) {
   const { t } = useI18n()
   const thumb = item.thumb_url || item.url
+  // 卡片不做入场动画：面板滑出时几十张卡片各自跑一次 framer-motion
+  // 动画是侧边栏"时常卡顿"的主因（主线程被逐帧 style 写入占满，
+  // 与滑出动画抢同一帧预算）。卡片改为静态渲染，图片由 SmartImage 淡入。
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: Math.min(index * 0.02, 0.3), ease: 'easeOut' }}
+    <div
       className="group relative cursor-pointer overflow-hidden rounded-xl border border-app bg-surface transition-colors hover:border-app-strong"
       onClick={() => onOpen(item)}
     >
@@ -91,7 +89,7 @@ function MediaCard({
           {t('library.openItem')}
         </span>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -175,8 +173,8 @@ export function LibraryPanel({
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="absolute left-0 top-0 z-50 flex h-full w-96 flex-col border-r border-app bg-app"
+            transition={{ type: 'tween', duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+            className="absolute left-0 top-0 z-50 flex h-full w-96 flex-col border-r border-app bg-app will-change-transform"
           >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-app px-5 py-3.5">
@@ -306,8 +304,8 @@ function EmptyLibrary() {
 function FlatGrid({ items, onOpen }: { items: MediaRow[]; onOpen: (item: MediaRow) => void }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-3">
-      {items.map((item, i) => (
-        <MediaCard key={item.id} item={item} index={i} onOpen={onOpen} />
+      {items.map((item) => (
+        <MediaCard key={item.id} item={item} onOpen={onOpen} />
       ))}
     </div>
   )
@@ -337,11 +335,7 @@ function AuthorSection({ author, items, onOpen }: { author: string; items: Media
   const avgH = items.length > 0 ? Math.round(totalHeight / items.length) : 0
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-    >
+    <section>
       {/* Author header */}
       <div className="mb-3 flex items-center gap-3">
         <div
@@ -369,10 +363,10 @@ function AuthorSection({ author, items, onOpen }: { author: string; items: Media
 
       {/* Media grid */}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-3">
-        {items.map((item, i) => (
-          <MediaCard key={item.id} item={item} index={i} onOpen={onOpen} />
+        {items.map((item) => (
+          <MediaCard key={item.id} item={item} onOpen={onOpen} />
         ))}
       </div>
-    </motion.section>
+    </section>
   )
 }
