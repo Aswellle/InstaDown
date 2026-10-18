@@ -19,7 +19,9 @@ export const zhCN = {
     image: '图片',
     video: '视频',
     unknownAuthor: '未知作者',
-    all: '全部'
+    all: '全部',
+    /** 提示语 + 原始错误信息（标点随语言变化，勿在调用处硬编码） */
+    errorDetail: '{prefix}：{detail}'
   },
 
   // ── 顶栏 ──

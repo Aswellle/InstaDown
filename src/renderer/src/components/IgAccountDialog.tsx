@@ -16,6 +16,7 @@ import { SmartImage } from '@/components/ui/smart-image'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useIgAccountStore } from '@/stores/ig-account'
 import { useI18n } from '@/i18n'
+import { errorMessage } from '@/lib/app-error'
 
 /**
  * IG 账号面板：点击顶栏头像进入（而不是跳到设置）。
@@ -77,7 +78,7 @@ export function IgAccountDialog({
       toast.success(t('account.loggedOut'))
       onClose()
     } catch (e) {
-      toast.error(`${t('account.logoutFailed')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('account.logoutFailed'), detail: errorMessage(e) }))
     } finally {
       setBusy(false)
     }

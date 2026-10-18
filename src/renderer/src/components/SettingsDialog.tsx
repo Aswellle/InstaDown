@@ -31,6 +31,7 @@ import { useI18n } from '@/i18n'
 import type { MessageKey } from '@/i18n/zh-CN'
 import { GITHUB_REPO_LABEL, GITHUB_REPO_URL } from '@shared/repo'
 import { cn, formatBytes } from '@/lib/utils'
+import { errorMessage } from '@/lib/app-error'
 
 const THEME_OPTIONS: Array<{ value: ThemeMode; labelKey: MessageKey; icon: typeof Sun }> = [
   { value: 'light', labelKey: 'settings.themeLight', icon: Sun },
@@ -109,7 +110,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       const opened = await window.instadown.openDownloadDir()
       if (opened === null) toast.error(t('settings.dirNotSet'))
     } catch (e) {
-      toast.error(`${t('settings.dirOpenFailed')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('settings.dirOpenFailed'), detail: errorMessage(e) }))
     }
   }
 
@@ -145,7 +146,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         toast.error(t(res.reason === 'timeout' ? 'login.timeout' : 'settings.loginFailed'))
       }
     } catch (e) {
-      toast.error(`${t('settings.loginError')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('settings.loginError'), detail: errorMessage(e) }))
     } finally {
       setLoggingIn(false)
     }
@@ -159,7 +160,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       setIgLoggedIn(null)
       toast.success(t('settings.loggedOut'))
     } catch (e) {
-      toast.error(`${t('settings.logoutFailed')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('settings.logoutFailed'), detail: errorMessage(e) }))
     }
   }
 
@@ -172,7 +173,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         description: t('settings.cacheClearedDesc')
       })
     } catch (e) {
-      toast.error(`${t('settings.clearFailed')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('settings.clearFailed'), detail: errorMessage(e) }))
     }
   }
 
@@ -183,7 +184,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       setConfirm(null)
       toast.success(t('settings.historyCleared'), { description: t('settings.historyClearedDesc') })
     } catch (e) {
-      toast.error(`${t('settings.clearFailed')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('settings.clearFailed'), detail: errorMessage(e) }))
     }
   }
 

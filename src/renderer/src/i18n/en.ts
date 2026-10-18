@@ -17,7 +17,8 @@ export const en = {
     image: 'Image',
     video: 'Video',
     unknownAuthor: 'Unknown author',
-    all: 'All'
+    all: 'All',
+    errorDetail: '{prefix}: {detail}'
   },
 
   topBar: {

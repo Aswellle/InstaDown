@@ -164,7 +164,7 @@ export default function App() {
     try {
       setLibRows(await window.instadown.getLibrary())
     } catch (e) {
-      toast.error(`${t('libFull.loadFailed')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('libFull.loadFailed'), detail: errorMessage(e) }))
     } finally {
       setLibLoading(false)
     }
@@ -215,7 +215,7 @@ export default function App() {
         const { taskIds } = await window.instadown.addDownload(payload)
         toast.success(t('download.queued', { n: taskIds.length }))
       } catch (e) {
-        toast.error(`${t('download.queueFailed')}：${(e as Error).message}`)
+        toast.error(t('common.errorDetail', { prefix: t('download.queueFailed'), detail: errorMessage(e) }))
       }
     },
     [t]
@@ -336,7 +336,7 @@ export default function App() {
       const { taskIds } = await window.instadown.addDownload(payload)
       toast.success(t('download.queued', { n: taskIds.length }))
     } catch (e) {
-      toast.error(`${t('download.queueFailed')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('download.queueFailed'), detail: errorMessage(e) }))
     }
   }
 
@@ -362,7 +362,7 @@ export default function App() {
         toast.error(t(res.reason === 'timeout' ? 'login.timeout' : 'login.incomplete'))
       }
     } catch (e) {
-      toast.error(`${t('settings.loginError')}：${(e as Error).message}`)
+      toast.error(t('common.errorDetail', { prefix: t('settings.loginError'), detail: errorMessage(e) }))
     }
   }
 

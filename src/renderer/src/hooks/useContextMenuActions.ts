@@ -4,6 +4,7 @@ import type { MediaItem } from '@shared/types'
 import { useTaskStore } from '@/stores/tasks'
 import { useLibraryStore } from '@/stores/library'
 import { i18nT } from '@/i18n'
+import { errorMessage } from '@/lib/app-error'
 
 export function useContextMenuActions() {
   const downloadItems = useCallback(async (targets: MediaItem[]) => {
@@ -34,7 +35,7 @@ export function useContextMenuActions() {
       const { taskIds } = await window.instadown.addDownload(payload)
       toast.success(i18nT('download.queued', { n: taskIds.length }))
     } catch (e) {
-      toast.error(`${i18nT('download.queueFailed')}：${(e as Error).message}`)
+      toast.error(i18nT('common.errorDetail', { prefix: i18nT('download.queueFailed'), detail: errorMessage(e) }))
     }
   }, [])
 
