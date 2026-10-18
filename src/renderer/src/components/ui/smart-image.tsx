@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ImageOff } from 'lucide-react'
 import { i18nT } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -66,6 +66,9 @@ export function SmartImage({
   draggable?: boolean
 }) {
   const [failed, setFailed] = useState(false)
+  /** 图片字节就绪后才淡入：占位 → 图片的切换不再"啪"地跳出来 */
+  const [painted, setPainted] = useState(false)
+  const imgRef = useRef<HTMLImageElement>(null)
   const [current, setCurrent] = useState<string | null>(() => {
     if (!src) return null
     // 已解析过（含本地协议）直接使用，避免闪一下远端链接
@@ -74,6 +77,7 @@ export function SmartImage({
 
   useEffect(() => {
     setFailed(false)
+    setPainted(false)
     if (!src) {
       setCurrent(null)
       return
@@ -96,6 +100,13 @@ export function SmartImage({
       alive = false
     }
   }, [src])
+
+  // 命中浏览器缓存时 onLoad 可能在挂载后立刻触发、也可能早于 ref 绑定，
+  // 用 complete 兜底判断，否则会永远停在半透明状态。
+  useEffect(() => {
+    const el = imgRef.current
+    if (el?.complete && el.naturalWidth > 0) setPainted(true)
+  }, [current])
 
   if (!src || failed) {
     return (
@@ -121,12 +132,20 @@ export function SmartImage({
 
   return (
     <img
+      ref={imgRef}
       src={current}
       alt={alt}
       loading={loading}
       decoding="async"
       draggable={draggable}
-      className={className}
+      onLoad={() => setPainted(true)}
+      className={cn(
+        // 尺寸由父容器决定，图片只做透明度过渡：字节就绪后淡入，
+        // 避免"占位块 → 图片"的硬切。prefers-reduced-motion 下立即显示。
+        'transition-opacity duration-300 ease-out motion-reduce:transition-none',
+        painted ? 'opacity-100' : 'opacity-0',
+        className
+      )}
       onError={() => setFailed(true)}
     />
   )
