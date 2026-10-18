@@ -18,10 +18,11 @@ import { en } from './en'
  * 语言解析优先级：
  *   1. 用户显式选择（localStorage，应用内切换开关写入）
  *   2. 系统语言（navigator.language）——匹配 zh* 用简中，其余用英文
- *   3. 兜底简中（默认语言，见需求）
+ *   （默认语言是简中，但"跟随系统"时非中文系统按英文显示，不是硬兜底简中）
  *
- * 为什么不用 i18next：只有一个二维语言集（zh-CN / en），200+ 键值，
- * 自带实现 < 100 行且类型全推导（键名写错编译期报错），依赖成本为零。
+ * 为什么不用 i18next：只有两种语言（zh-CN / en）、300+ 键值，
+ * 自带实现不到 200 行，键名由 MessageKey 联合类型约束（拼错编译期报错），
+ * 依赖成本为零。
  */
 
 export type { Locale }
@@ -40,7 +41,7 @@ function storedLocale(): Locale | null {
   }
 }
 
-/** 系统语言 → 支持的 Locale：zh 开头一律简中，其余英文（兜底简中） */
+/** 系统语言 → 支持的 Locale：zh 开头用简中，其余用英文 */
 export function systemLocale(): Locale {
   const lang = typeof navigator !== 'undefined' ? navigator.language : 'zh-CN'
   return lang?.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
@@ -58,15 +59,11 @@ export type I18n = {
   t: TFn
 }
 
-type DictValue = string | number | ((...args: never[]) => string) | object
-
 export type TFn = {
   /** 键名由 MessageKey 约束，拼错或用了不存在的键在编译期报错 */
   (path: MessageKey, vars?: Record<string, string | number>): string
   /** 键是否存在（动态拼接的键用这个先判断） */
   has(path: string): boolean
-  // 函数型词条（如 download.parseHint）直接取原始值
-  raw<T = DictValue>(path: string): T
 }
 
 function resolvePath(dict: unknown, path: string): unknown {
@@ -150,7 +147,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       if (typeof fallback === 'string') return interpolate(fallback, vars)
       return path
     }) as TFn
-    fn.raw = <T,>(path: string): T => resolvePath(dict, path) as T
     fn.has = (path: string): boolean => typeof resolvePath(dict, path) === 'string'
     return fn
   }, [locale])
