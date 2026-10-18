@@ -145,7 +145,7 @@ export function LibraryPanel({
       else map.set(key, [item])
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]))
-  }, [items])
+  }, [items, t])
 
   // Filter by search
   const filtered = useMemo(() => {

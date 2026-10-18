@@ -103,7 +103,7 @@ export function LibraryFullscreen({
       counts.set(a, (counts.get(a) ?? 0) + 1)
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1])
-  }, [items])
+  }, [items, t])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -135,7 +135,7 @@ export function LibraryFullscreen({
         sorted.sort((a, b) => b.created_at - a.created_at)
     }
     return sorted
-  }, [items, search, typeFilter, author, sort])
+  }, [items, search, typeFilter, author, sort, t])
 
   const toggleSelect = (id: string, additive: boolean) => {
     setSelected((prev) => {
