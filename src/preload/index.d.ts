@@ -73,8 +73,8 @@ declare global {
       chooseDirectory(): Promise<string | null>
       setSessionCookie(value: string | null): Promise<void>
       hasSessionCookie(): Promise<boolean>
-      igLogin(): Promise<{ ok: boolean; hasSession?: boolean; username?: string | null; avatar?: string | null; cancelled?: boolean; message?: string }>
-      igResetAndLogin(): Promise<{ ok: boolean; hasSession?: boolean; username?: string | null; avatar?: string | null; cancelled?: boolean; message?: string }>
+      igLogin(): Promise<{ ok: boolean; hasSession?: boolean; username?: string | null; avatar?: string | null; cancelled?: boolean; reason?: 'timeout' | 'incomplete' }>
+      igResetAndLogin(): Promise<{ ok: boolean; hasSession?: boolean; username?: string | null; avatar?: string | null; cancelled?: boolean; reason?: 'timeout' | 'incomplete' }>
       igLogout(): Promise<void>
       igLoginStatus(): Promise<{ persisted: boolean; partition: boolean; profile: { username: string; avatar: string } | null }>
       /** 原始主题模式（'system' 交由主进程解析，保持系统跟随不被冻结） */

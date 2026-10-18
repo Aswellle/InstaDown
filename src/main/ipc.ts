@@ -8,7 +8,8 @@ import type {
   ProfileUser,
   TaskEvent,
   AppError,
-  AppSettings
+  AppSettings,
+  Locale
 } from '@shared/types'
 import type { Repos, TaskRow, MediaRow } from './db/repos'
 import type { WorkerManager } from './services/worker-manager'
@@ -176,9 +177,17 @@ export function registerIpc(deps: IpcDeps): void {
   // 系统通知（fire-and-forget）。文案语言跟随渲染层选择：
   // 渲染层在语言切换时调用 window:setLocale 通知主进程；
   // 主进程兜底用系统 locale 解析（简中 or 其它一律英文）。
-  let uiLocale: 'zh-CN' | 'en' = /^(zh)/i.test(app.getLocale()) ? 'zh-CN' : 'en'
+  //
+  // 注意不能在这里直接调 app.getLocale()：registerIpc 在 app.whenReady()
+  // 之前执行，此时 getLocale() 返回空串，会让兜底值恒为英文。
+  let uiLocaleOverride: Locale | null = null
+  const uiLocale = (): Locale => {
+    if (uiLocaleOverride) return uiLocaleOverride
+    const system = app.getLocale() || 'en'
+    return /^zh/i.test(system) ? 'zh-CN' : 'en'
+  }
   const notifText = () =>
-    uiLocale === 'zh-CN' ? { title: '下载完成' } : { title: 'Download complete' }
+    uiLocale() === 'zh-CN' ? { title: '下载完成' } : { title: 'Download complete' }
   ipcMain.on('notification:download-complete', (_e, { filename, destPath }: { filename: string; destPath: string }) => {
     if (!Notification.isSupported()) return
     const { title } = notifText()
@@ -198,8 +207,8 @@ export function registerIpc(deps: IpcDeps): void {
   }
 
   // 渲染层语言切换时同步到主进程（通知/对话框文案跟随）
-  handle('window:setLocale', (locale: 'zh-CN' | 'en') => {
-    if (locale === 'zh-CN' || locale === 'en') uiLocale = locale
+  handle('window:setLocale', (locale: Locale) => {
+    if (locale === 'zh-CN' || locale === 'en') uiLocaleOverride = locale
   })
 
   // ------------------------------------------------------------ 解析
@@ -418,7 +427,7 @@ export function registerIpc(deps: IpcDeps): void {
     if (!w) return null
     const r = await dialog.showOpenDialog(w, {
       properties: ['openDirectory', 'createDirectory'],
-      title: uiLocale === 'zh-CN' ? '选择下载目录' : 'Choose download directory'
+      title: uiLocale() === 'zh-CN' ? '选择下载目录' : 'Choose download directory'
     })
     if (r.canceled || r.filePaths.length === 0) return null
     return settings.set({ downloadDir: r.filePaths[0] }).downloadDir
@@ -495,17 +504,17 @@ export function registerIpc(deps: IpcDeps): void {
   // 清除分区后重新登录（用于会话失效/残留时从干净状态开始）
   handle('ig:resetAndLogin', async () => {
     await clearInstagramLoginSession()
-    const result = await openInstagramLogin(win())
+    const result = await openInstagramLogin(win(), uiLocale())
     if (result.ok && result.cookie) {
       settings.setSession(result.cookie)
       await worker.setSession(result.cookie)
       return { ok: true, hasSession: true, username: result.username ?? null }
     }
     if (result.cancelled) return { ok: false, cancelled: true }
-    return { ok: false, message: result.message ?? '登录未完成' }
+    return { ok: false, reason: result.reason ?? 'incomplete' }
   })
   handle('ig:login', async () => {
-    const result = await openInstagramLogin(win())
+    const result = await openInstagramLogin(win(), uiLocale())
     if (result.ok && result.cookie) {
       // 加密持久化 + 立即同步给 Python Worker
       settings.setSession(result.cookie)
@@ -533,10 +542,7 @@ export function registerIpc(deps: IpcDeps): void {
       }
     }
     if (result.cancelled) return { ok: false, cancelled: true }
-    return {
-      ok: false,
-      message: result.message ?? '登录未完成（可能还需在登录页面完成安全验证）'
-    }
+    return { ok: false, reason: result.reason ?? 'incomplete' }
   })
   handle('ig:logout', async () => {
     await clearInstagramLoginSession()

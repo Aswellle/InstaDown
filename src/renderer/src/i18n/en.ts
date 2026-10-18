@@ -101,7 +101,8 @@ export const en = {
 
   login: {
     successDesc: 'Session encrypted and stored locally — Stories and profile archives are now available',
-    incomplete: 'Login not completed, please try again'
+    incomplete: 'Login not completed, please try again',
+    timeout: 'Login timed out or security verification incomplete — please try again'
   },
 
   selection: {

@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode
 } from 'react'
+import type { Locale } from '@shared/types'
 import { zhCN } from './zh-CN'
 import { en } from './en'
 
@@ -22,7 +23,7 @@ import { en } from './en'
  * 自带实现 < 100 行且类型全推导（键名写错编译期报错），依赖成本为零。
  */
 
-export type Locale = 'zh-CN' | 'en'
+export type { Locale }
 
 const STORAGE_KEY = 'instadown.locale'
 

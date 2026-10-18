@@ -85,6 +85,9 @@ export interface AppError {
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
+/** 界面语言。跨进程共享：main / preload / renderer 必须用同一份联合类型 */
+export type Locale = 'zh-CN' | 'en'
+
 export interface AppSettings {
   downloadDir: string
   concurrency: number

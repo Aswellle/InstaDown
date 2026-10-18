@@ -141,7 +141,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       } else if (res.cancelled) {
         toast.info(t('settings.loginCancelled'))
       } else {
-        toast.error(res.message ?? t('settings.loginFailed'))
+        toast.error(t(res.reason === 'timeout' ? 'login.timeout' : 'settings.loginFailed'))
       }
     } catch (e) {
       toast.error(`${t('settings.loginError')}：${(e as Error).message}`)

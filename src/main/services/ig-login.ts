@@ -34,6 +34,8 @@ async function readIgCookies(partition: string): Promise<string> {
   return igCookies.map((c) => `${c.name}=${c.value}`).join('; ')
 }
 
+import type { Locale } from '@shared/types'
+
 export interface LoginResult {
   ok: boolean
   /** 是否确认已认证（接口验证通过） */
@@ -44,7 +46,8 @@ export interface LoginResult {
   avatar?: string
   cookie?: string
   cancelled?: boolean
-  message?: string
+  /** 失败原因码：文案由渲染层按当前语言解析，主进程不持有用户可见文案 */
+  reason?: 'timeout' | 'incomplete'
 }
 
 /** 判定登录态的页面内探针。
@@ -195,7 +198,10 @@ async function verifyAuthenticated(): Promise<{
  * 打开登录窗口并等待用户完成登录。
  * 返回提取到的 Cookie（若成功）或取消信息。
  */
-export function openInstagramLogin(parent: BrowserWindow | null): Promise<LoginResult> {
+export function openInstagramLogin(
+  parent: BrowserWindow | null,
+  locale: Locale = 'zh-CN'
+): Promise<LoginResult> {
   return new Promise((resolve) => {
     const ses = session.fromPartition(LOGIN_PARTITION)
     // 使用桌面版 UA，避免被引导到 App 下载页
@@ -214,7 +220,7 @@ export function openInstagramLogin(parent: BrowserWindow | null): Promise<LoginR
       show: false,
       autoHideMenuBar: true,
       backgroundColor: nativeTheme.shouldUseDarkColors ? '#000000' : '#ffffff',
-      title: '登录 Instagram',
+      title: locale === 'zh-CN' ? '登录 Instagram' : 'Log in to Instagram',
       webPreferences: {
         partition: LOGIN_PARTITION,
         sandbox: true,
@@ -274,7 +280,7 @@ export function openInstagramLogin(parent: BrowserWindow | null): Promise<LoginR
         finish({
           ok: false,
           hasSession: false,
-          message: '登录超时或未完成安全验证，请重试'
+          reason: 'timeout'
         }),
       8 * 60 * 1000
     )

@@ -119,7 +119,8 @@ export const zhCN = {
   // ── 登录成功描述 ──
   login: {
     successDesc: '会话已加密保存在本机，Stories 与主页归档已可用',
-    incomplete: '登录未完成，请重试'
+    incomplete: '登录未完成，请重试',
+    timeout: '登录超时或未完成安全验证，请重试'
   },
 
   // ── 图片 ──

@@ -359,7 +359,7 @@ export default function App() {
         const lastInput = view.mode === 'error' ? view.lastInput : undefined
         if (lastInput) handleParse(lastInput)
       } else if (!res.cancelled) {
-        toast.error(res.message ?? t('login.incomplete'))
+        toast.error(t(res.reason === 'timeout' ? 'login.timeout' : 'login.incomplete'))
       }
     } catch (e) {
       toast.error(`${t('settings.loginError')}：${(e as Error).message}`)
