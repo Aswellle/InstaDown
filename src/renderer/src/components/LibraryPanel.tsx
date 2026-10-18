@@ -11,9 +11,11 @@ import {
 } from 'lucide-react'
 import type { MediaRow } from '@shared/types'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
+import { localFileUrl } from '@/lib/local-file'
 import { Button, Input, Skeleton } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { useI18n } from '@/i18n'
+import { loadLibraryPrefs, saveLibraryPrefs } from '@/lib/library-prefs'
 
 // ── Avatar color palette (deterministic by username) ─────────────────────
 const AVATAR_COLORS = [
@@ -45,7 +47,8 @@ function MediaCard({
   onOpen: (item: MediaRow) => void
 }) {
   const { t } = useI18n()
-  const thumb = item.thumb_url || item.url
+  // 已归档条目直接读本地文件：不受 CDN 签名过期影响，也不用再走图片缓存
+  const thumb = item.path ? localFileUrl(item.path) : item.thumb_url || item.url
   // 卡片不做入场动画：面板滑出时几十张卡片各自跑一次 framer-motion
   // 动画是侧边栏"时常卡顿"的主因（主线程被逐帧 style 写入占满，
   // 与滑出动画抢同一帧预算）。卡片改为静态渲染，图片由 SmartImage 淡入。
@@ -112,7 +115,12 @@ export function LibraryPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [showAll, setShowAll] = useState(false)
+  // 分组/平铺是浏览习惯，跨会话保留
+  const [showAll, setShowAll] = useState(() => loadLibraryPrefs().viewMode === 'flat')
+
+  useEffect(() => {
+    saveLibraryPrefs({ viewMode: showAll ? 'flat' : 'grouped' })
+  }, [showAll])
 
   const loadLibrary = useCallback(async () => {
     setLoading(true)

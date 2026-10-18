@@ -129,4 +129,8 @@ export interface MediaRow {
   caption: string | null
   taken_at: number | null
   created_at: number
+  /** 媒体库条目专用：本机已归档文件的绝对路径（未下载的行没有该字段） */
+  path?: string | null
+  /** 媒体库条目专用：已归档文件大小（字节） */
+  file_size?: number | null
 }

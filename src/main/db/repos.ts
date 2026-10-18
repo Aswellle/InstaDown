@@ -80,6 +80,34 @@ export class Repos {
       .all(limit) as unknown as MediaRow[]
   }
 
+  /**
+   * 媒体库：只列**已归档到本机**的媒体，并带上落盘路径。
+   *
+   * 与 listMedia 的区别：listMedia 是"解析过的媒体"（预览缓存），
+   * 用户在主页里滑一遍就会产生大量未下载的行。媒体库的语义是
+   * "我的本地归档"，因此以 history 为准 —— 同一 media_id 可能被
+   * 下载多次（重下/改名），取最新一条路径。
+   */
+  listArchivedMedia(author?: string, limit = 500): MediaRow[] {
+    const where = author ? 'WHERE m.author = ?' : ''
+    const args: Array<string | number> = author ? [author, limit] : [limit]
+    return this.db
+      .prepare(
+        `SELECT m.*, h.path AS path, h.size AS file_size
+           FROM media m
+           JOIN (
+             SELECT media_id, path, size, MAX(created_at) AS last_at
+               FROM history
+              WHERE media_id IS NOT NULL AND path <> ''
+              GROUP BY media_id
+           ) h ON h.media_id = m.id
+          ${where}
+          ORDER BY h.last_at DESC
+          LIMIT ?`
+      )
+      .all(...args) as unknown as MediaRow[]
+  }
+
   // ------------------------------------------------------------------ tasks
   insertTask(t: TaskRow): void {
     this.db

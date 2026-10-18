@@ -337,9 +337,9 @@ export function registerIpc(deps: IpcDeps): void {
 
   // ------------------------------------------------------------ 历史/库
   handle('history:list', () => repos.listHistory())
-  handle('library:list', (author?: string) =>
-    author ? repos.getMediaByAuthor(author) : repos.listMedia()
-  )
+  // 媒体库 = 已归档到本机的媒体（含落盘路径）；解析过但没下载的
+  // 条目只存在于 media 表里，属于预览缓存，不进媒体库。
+  handle('library:list', (author?: string) => repos.listArchivedMedia(author))
   handle('history:clear', () => repos.clearHistory())
 
   // ------------------------------------------------------- 图片本地缓存

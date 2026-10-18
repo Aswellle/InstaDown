@@ -24,6 +24,7 @@ import type { MediaRow } from '@shared/types'
 import { Button, Skeleton, Spinner } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { appErrorText, errorMessage } from '@/lib/app-error'
+import { localFileUrl } from '@/lib/local-file'
 import { isProbablyIgUrl, classifyIgUrl } from '@shared/ig-url'
 import { useApplyTheme, useIsDark } from '@/lib/theme'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -178,10 +179,12 @@ export default function App() {
   const openLibItem = useCallback(
     (row: MediaRow) => {
       const idx = libRows.findIndex((r) => r.id === row.id)
+      // 媒体库条目都已归档到本机：优先用本地文件协议打开，
+      // 离线、原链接过期都不影响；没有路径（异常数据）才退回远端 URL。
       const adapted: MediaItem[] = libRows.map((r) => ({
         id: r.id,
         type: r.type as 'image' | 'video',
-        url: r.url,
+        url: r.path ? localFileUrl(r.path) : r.url,
         thumb_url: r.thumb_url,
         width: r.width,
         height: r.height,
@@ -439,7 +442,10 @@ export default function App() {
           <button
             className="no-drag rounded-md p-2 text-muted transition-colors hover:bg-surface-hover hover:text-app"
             title={t('topBar.library')}
-            onClick={() => { setLibraryOpen(true); setHistoryOpen(false) }}
+            onClick={() => {
+              setHistoryOpen(false)
+              setLibraryOpen(true)
+            }}
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
@@ -682,7 +688,12 @@ export default function App() {
       {/* 全屏媒体库（独立视觉模块）：网格 + 检索 + 批量下载 + 应用内查看 */}
       <LibraryFullscreen
         open={libraryFull}
-        onClose={() => setLibraryFull(false)}
+        onClose={() => {
+          // 收起全屏库回到侧边栏：同一份内容，只是换个密度继续浏览。
+          // 要回首页用左侧「返回主页」按钮（或 Esc 后再 Esc）。
+          setLibraryFull(false)
+          setLibraryOpen(true)
+        }}
         onGoHome={() => {
           setLibraryFull(false)
           goHome()

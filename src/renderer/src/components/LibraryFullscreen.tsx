@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import type { MediaRow } from '@shared/types'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
+import { localFileUrl } from '@/lib/local-file'
 import { Button, Checkbox, Input } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { useI18n, type TFn } from '@/i18n'
@@ -534,7 +535,8 @@ function FullscreenCard({
   onOpen: () => void
 }) {
   const { t } = useI18n()
-  const thumb = item.thumb_url || item.url
+  // 已归档条目直接读本地文件：不受 CDN 签名过期影响，也不用再走图片缓存
+  const thumb = item.path ? localFileUrl(item.path) : item.thumb_url || item.url
   // 不做逐卡入场动画：大库（数百项）下每张卡片各跑一次 framer-motion
   // 动画会让打开/筛选时明显掉帧；图片本身由 SmartImage 淡入。
   return (

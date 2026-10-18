@@ -7,7 +7,6 @@
  */
 
 export type LibraryViewMode = 'grouped' | 'flat'
-export type LibrarySurface = 'sidebar' | 'full'
 export type LibrarySort = 'date-desc' | 'date-asc' | 'author' | 'size-desc'
 export type LibraryTypeFilter = 'all' | 'image' | 'video'
 
@@ -20,8 +19,6 @@ export interface LibraryPrefs {
   typeFilter: LibraryTypeFilter
   /** 全屏：筛选栏是否折叠 */
   filtersCollapsed: boolean
-  /** 顶栏媒体库按钮打开的视图（用户最后一次使用的） */
-  surface: LibrarySurface
 }
 
 const KEY = 'instadown.library.prefs'
@@ -30,8 +27,7 @@ const DEFAULTS: LibraryPrefs = {
   viewMode: 'grouped',
   sort: 'date-desc',
   typeFilter: 'all',
-  filtersCollapsed: false,
-  surface: 'sidebar'
+  filtersCollapsed: false
 }
 
 export function loadLibraryPrefs(): LibraryPrefs {
@@ -49,8 +45,7 @@ export function loadLibraryPrefs(): LibraryPrefs {
         parsed.typeFilter === 'image' || parsed.typeFilter === 'video'
           ? parsed.typeFilter
           : 'all',
-      filtersCollapsed: parsed.filtersCollapsed === true,
-      surface: parsed.surface === 'full' ? 'full' : 'sidebar'
+      filtersCollapsed: parsed.filtersCollapsed === true
     }
   } catch {
     return { ...DEFAULTS }
