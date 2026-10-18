@@ -89,7 +89,7 @@ export function ConfirmDialog({
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="secondary" size="sm" onClick={onCancel}>
-                {cancelLabel}
+                {cancelLabel ?? t('common.cancel')}
               </Button>
               <Button
                 autoFocus
