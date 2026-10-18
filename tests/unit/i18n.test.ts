@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /**
- * 双字典结构一致性（t() 用同一条键路径查两本字典，任何一边缺键都会
- * 在运行时静默回退到简中，表现为"界面半中半英"）。
+ * 字典一致性与调用点覆盖。
  *
- * 以源码文本方式加载字典（与 selector-stability 等测试一致 —— 单测项目
- * 的 tsconfig 不含 renderer 目录，避免直接 import）：
+ * 两件事分开保证：
+ *   1. 双字典结构一致（t() 用同一条键路径查两本字典，任何一边缺键都会
+ *      在运行时静默回退到简中，表现为"界面半中半英"）。
+ *   2. 组件里写死的 t('…') 键名都能在字典里解析 —— 曾出现账号面板
+ *      引用 account.sessionValid（实际在 settings 下），缺键时 t()
+ *      返回键路径本身，界面直接显示 account.sessionValid。
+ *
+ * 以源码文本方式加载字典（单测项目的 tsconfig 不含 renderer 目录，
+ * 避免直接 import）：
  *   1. 剥掉 import/export 语句后用 new Function 求值出字典对象
  *   2. 对比两本字典的键结构、占位符与叶子类型
  */
@@ -76,5 +82,66 @@ describe('i18n 双字典', () => {
 
   it('en 的语言名保留原文字（简体中文 不翻译）', () => {
     expect((en.settings as Record<string, string>).languageZh).toBe('简体中文')
+  })
+})
+
+/**
+ * 调用点覆盖：扫源码里字面量形式的 t('…') / i18nT('…')，
+ * 断言每个键都能在字典里解析。
+ *
+ * 动态拼接的键（`error.${code}`、`task.status_${status}`）不在此列 ——
+ * 前者已改为 t.has() 判断，后者由 AppErrorCode / TaskStatus 联合类型约束，
+ * 这里对带 ${ 的模板字面量直接跳过。
+ */
+const RENDERER_SRC = join(ROOT, 'src', 'renderer', 'src')
+
+function collectSourceFiles(dir: string): string[] {
+  const out: string[] = []
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name)
+    if (statSync(p).isDirectory()) out.push(...collectSourceFiles(p))
+    else if (/\.(ts|tsx)$/.test(name)) out.push(p)
+  }
+  return out
+}
+
+function resolve(obj: unknown, path: string): unknown {
+  let cur: unknown = obj
+  for (const seg of path.split('.')) {
+    if (cur == null || typeof cur !== 'object') return undefined
+    cur = (cur as Record<string, unknown>)[seg]
+  }
+  return cur
+}
+
+describe('i18n 调用点', () => {
+  const files = collectSourceFiles(RENDERER_SRC).filter(
+    (f) => !/[\\/]i18n[\\/](zh-CN|en)\.ts$/.test(f)
+  )
+
+  it('渲染层存在可扫描文件', () => {
+    expect(files.length).toBeGreaterThan(10)
+  })
+
+  it('所有字面量键名都能在字典中解析', () => {
+    const missing: string[] = []
+    for (const file of files) {
+      const src = readFileSync(file, 'utf-8')
+      for (const m of src.matchAll(/\b(?:t|i18nT)\(\s*['"]([\w.]+)['"]/g)) {
+        const key = m[1]
+        if (typeof resolve(zh, key) !== 'string') {
+          const line = src.slice(0, m.index).split('\n').length
+          missing.push(`${file.replace(ROOT + '/', '')}:${line} → ${key}`)
+        }
+      }
+    }
+    expect(missing, '字典中不存在的键').toEqual([])
+  })
+
+  it('自检：检测器能识别缺失的键', () => {
+    const sample = `const x = t('account.noSuchKey')`
+    const found = [...sample.matchAll(/\b(?:t|i18nT)\(\s*['"]([\w.]+)['"]/g)].map((m) => m[1])
+    expect(found).toEqual(['account.noSuchKey'])
+    expect(resolve(zh, found[0])).toBeUndefined()
   })
 })

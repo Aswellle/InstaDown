@@ -21,7 +21,7 @@ import type { MediaRow } from '@shared/types'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
 import { Button, Checkbox, Input } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
-import { useI18n } from '@/i18n'
+import { useI18n, type TFn } from '@/i18n'
 
 /**
  * 全屏媒体库（独立的视觉模块）。
@@ -35,7 +35,7 @@ import { useI18n } from '@/i18n'
 type TypeFilter = 'all' | 'image' | 'video'
 type SortKey = 'date-desc' | 'date-asc' | 'author' | 'size-desc'
 
-function sortLabel(sort: SortKey, t: (p: string) => string): string {
+function sortLabel(sort: SortKey, t: TFn): string {
   switch (sort) {
     case 'date-desc': return t('libFull.sortNewest')
     case 'date-asc': return t('libFull.sortOldest')

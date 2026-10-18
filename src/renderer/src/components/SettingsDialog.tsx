@@ -28,10 +28,11 @@ import { useIgAccountStore } from '@/stores/ig-account'
 import { SmartImage } from '@/components/ui/smart-image'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useI18n } from '@/i18n'
+import type { MessageKey } from '@/i18n/zh-CN'
 import { GITHUB_REPO_LABEL, GITHUB_REPO_URL } from '@shared/repo'
 import { cn, formatBytes } from '@/lib/utils'
 
-const THEME_OPTIONS: Array<{ value: ThemeMode; labelKey: string; icon: typeof Sun }> = [
+const THEME_OPTIONS: Array<{ value: ThemeMode; labelKey: MessageKey; icon: typeof Sun }> = [
   { value: 'light', labelKey: 'settings.themeLight', icon: Sun },
   { value: 'dark', labelKey: 'settings.themeDark', icon: Moon },
   { value: 'system', labelKey: 'settings.themeSystem', icon: Monitor }

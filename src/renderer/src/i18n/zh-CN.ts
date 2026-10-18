@@ -461,4 +461,18 @@ export const zhCN = {
 } as const
 
 export type Dict = typeof zhCN
-export type LocaleKey = keyof Dict
+
+/** 扁平化的键路径联合类型（如 'topBar.parse' | 'settings.title' …） */
+type Join<K, P> = K extends string
+  ? P extends string
+    ? `${K}.${P}`
+    : never
+  : never
+
+type Leaves<T> = T extends string
+  ? never
+  : {
+      [K in keyof T & string]: T[K] extends string ? K : Join<K, Leaves<T[K]>>
+    }[keyof T & string]
+
+export type MessageKey = Leaves<Dict>

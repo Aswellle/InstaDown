@@ -9,6 +9,7 @@ import {
 } from 'react'
 import type { Locale } from '@shared/types'
 import { zhCN } from './zh-CN'
+import type { MessageKey } from './zh-CN'
 import { en } from './en'
 
 /**
@@ -60,8 +61,9 @@ export type I18n = {
 type DictValue = string | number | ((...args: never[]) => string) | object
 
 export type TFn = {
-  (path: string, vars?: Record<string, string | number>): string
-  /** 键是否存在（用于动态拼接的键，如 error.${code}） */
+  /** 键名由 MessageKey 约束，拼错或用了不存在的键在编译期报错 */
+  (path: MessageKey, vars?: Record<string, string | number>): string
+  /** 键是否存在（动态拼接的键用这个先判断） */
   has(path: string): boolean
   // 函数型词条（如 download.parseHint）直接取原始值
   raw<T = DictValue>(path: string): T

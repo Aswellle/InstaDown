@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { MediaCollection, MediaItem, ProfileUser, AppError } from '@shared/types'
 import { classifyIgUrl } from '@shared/ig-url'
 import { AppErrorException } from '@/lib/app-error'
+import type { MessageKey } from '@/i18n/zh-CN'
 
 export interface ProfilePage {
   user: ProfileUser
@@ -12,7 +13,7 @@ export interface ProfilePage {
 
 export type LibraryView =
   | { mode: 'empty' }
-  | { mode: 'loading'; hint: string }
+  | { mode: 'loading'; hint: MessageKey }
   | { mode: 'post'; collection: MediaCollection }
   | { mode: 'profile'; page: ProfilePage }
   | { mode: 'error'; error: AppError; canRetry: boolean; lastInput?: string }
