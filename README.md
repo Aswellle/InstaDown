@@ -7,8 +7,8 @@
 
 **把 Instagram 媒体完整地归档在你自己的硬盘上。**
 
-[![Release](https://img.shields.io/badge/Release-v0.3.0-rose?logo=github)](../../releases)
-[![Tests](https://img.shields.io/badge/Tests-100%20passing-16a34a?logo=vitest)](#开发)
+[![Release](https://img.shields.io/badge/Release-v0.3.1-rose?logo=github)](../../releases)
+[![Tests](https://img.shields.io/badge/Tests-111%20passing-16a34a?logo=vitest)](#开发)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?logo=electron)](#下载)
 [![License](https://img.shields.io/badge/License-MIT-8b5cf6)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#参与贡献)
@@ -155,15 +155,15 @@ npm run dist         # 打包发布版（win nsis / mac dmg / linux AppImage）
 
 要求：**Node ≥ 22、Python ≥ 3.11**（worker 零 pip 依赖）。环境变量 `INSTADOWN_PYTHON` 可指定解释器。
 
-测试覆盖：队列状态机、断点续传、URL 分类、多图回退、会话分级、selector 稳定性等 **100 个用例**（Vitest 53 + unittest 47）。
+测试覆盖：队列状态机、断点续传、URL 分类、多图回退、会话分级、selector 稳定性等 **111 个用例**（Vitest 64 + unittest 47）。
 
 ## 发布流程
 
 ```bash
 # 1. 更新 package.json 的 version 并提交
 # 2. 打标签推送 → GitHub Actions 自动三平台构建并创建 Release
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.3.1
+git push origin v0.3.1
 ```
 
 本机验证：`npm run dist:dir`（目录级）或 `npm run dist`（安装器）。

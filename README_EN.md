@@ -8,8 +8,8 @@
 
 **Archive Instagram media to your own disk — completely.**
 
-[![Release](https://img.shields.io/badge/Release-v0.3.0-rose?logo=github)](../../releases)
-[![Tests](https://img.shields.io/badge/Tests-100%20passing-16a34a?logo=vitest)](#development)
+[![Release](https://img.shields.io/badge/Release-v0.3.1-rose?logo=github)](../../releases)
+[![Tests](https://img.shields.io/badge/Tests-111%20passing-16a34a?logo=vitest)](#development)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?logo=electron)](#download)
 [![License](https://img.shields.io/badge/License-MIT-8b5cf6)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#contributing)
@@ -150,15 +150,15 @@ npm run dist         # Package release (win nsis / mac dmg / linux AppImage)
 
 Requirements: **Node ≥ 22, Python ≥ 3.11** (the worker has zero pip dependencies). Set `INSTADOWN_PYTHON` to pin an interpreter.
 
-Test coverage: queue state machine, resumable downloads, URL classification, carousel fallback, session tiering, selector stability — **100 cases** (53 Vitest + 47 unittest).
+Test coverage: queue state machine, resumable downloads, URL classification, carousel fallback, session tiering, selector stability — **111 cases** (64 Vitest + 47 unittest).
 
 ## Release process
 
 ```bash
 # 1. Bump version in package.json and commit
 # 2. Push a tag → GitHub Actions builds all three platforms and creates the Release
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.3.1
+git push origin v0.3.1
 ```
 
 Local verification: `npm run dist:dir` (directory) or `npm run dist` (installers).
