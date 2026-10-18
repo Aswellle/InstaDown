@@ -81,8 +81,13 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+      # 三个平台任务都会执行发布步骤，而 Release 只有一个。发布说明必须
+      # 只由一个任务生成：三个任务同时开启 generate_release_notes 会把
+      # 自动变更日志重复追加（实际出现过三行一模一样的 "Full Changelog"）。
+      # 因此拆成两个步骤：Linux 负责建 Release 并生成初始说明，
+      # 另外两个平台只上传自己的产物。正式说明由维护者在 Release 页撰写。
+      - name: Publish to GitHub Release (notes)
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -95,6 +100,22 @@ jobs:
           # 真正的把关交给下面的校验步骤。
           fail_on_unmatched_files: false
           generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to GitHub Release (artifacts only)
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'ubuntu-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*/*.exe
+            release/*/*.dmg
+            release/*/*.AppImage
+            release/*/latest*.yml
+            release/*/*.blockmap
+          fail_on_unmatched_files: false
+          generate_release_notes: false
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
