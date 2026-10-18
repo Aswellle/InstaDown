@@ -42,7 +42,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (open) {
@@ -80,7 +80,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
       const idx = viewableItems.findIndex((i) => i.id === String(row.id))
       onOpenViewer(viewableItems, idx >= 0 ? idx : 0)
     },
-    [viewableItems, onOpenViewer]
+    [viewableItems, onOpenViewer, t]
   )
 
   const handleReveal = useCallback(async (path: string) => {
@@ -89,7 +89,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     } catch {
       toast.error(t('history.revealFailed'))
     }
-  }, [])
+  }, [t])
 
   const handleOpenExternal = useCallback(async (path: string) => {
     try {
@@ -97,7 +97,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     } catch {
       toast.error(t('history.openFailed'))
     }
-  }, [])
+  }, [t])
 
   const handleCopyPath = useCallback(async (path: string) => {
     try {
@@ -106,11 +106,11 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     } catch {
       toast.error(t('history.copyFailed'))
     }
-  }, [])
+  }, [t])
 
   const handleReDownload = useCallback(() => {
     toast.info(t('history.redownloadHint'))
-  }, [])
+  }, [t])
 
   const handleClearHistory = useCallback(async () => {
     try {
@@ -121,7 +121,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     } catch {
       toast.error(t('history.clearFailed'))
     }
-  }, [])
+  }, [t])
 
   return (
     <AnimatePresence>

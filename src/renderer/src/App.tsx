@@ -135,7 +135,7 @@ export default function App() {
       container.removeEventListener('dragleave', onDragLeave)
       container.removeEventListener('drop', onDrop)
     }
-  }, [parse])
+  }, [parse, t])
 
   // 初始化：任务列表 / 设置 / 事件订阅
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function App() {
     } finally {
       setLibLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (libraryFull) void loadLibRows()
@@ -217,7 +217,7 @@ export default function App() {
         toast.error(`${t('download.queueFailed')}：${(e as Error).message}`)
       }
     },
-    []
+    [t]
   )
 
   const handleParse = useCallback(
