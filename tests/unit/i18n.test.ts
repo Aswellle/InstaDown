@@ -80,8 +80,10 @@ describe('i18n 双字典', () => {
     }
   })
 
-  it('en 的语言名保留原文字（简体中文 不翻译）', () => {
-    expect((en.settings as Record<string, string>).languageZh).toBe('简体中文')
+  it('语言名保留原文字（简体中文 不翻译）', () => {
+    expect((en.topBar as Record<string, string>).languageZh).toBe('简体中文')
+    expect((zh.topBar as Record<string, string>).languageZh).toBe('简体中文')
+    expect((en.topBar as Record<string, string>).languageEn).toBe('English')
   })
 })
 

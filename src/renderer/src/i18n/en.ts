@@ -7,17 +7,13 @@ export const en = {
   common: {
     cancel: 'Cancel',
     confirm: 'Confirm',
-    close: 'Close',
     save: 'Save',
     done: 'Done',
-    delete: 'Delete',
-    download: 'Download',
     retry: 'Retry',
     loading: 'Loading…',
     image: 'Image',
     video: 'Video',
     unknownAuthor: 'Unknown author',
-    all: 'All',
     errorDetail: '{prefix}: {detail}'
   },
 
@@ -34,7 +30,9 @@ export const en = {
     loginTooltip: 'Log in to Instagram (for Stories / profile archives)',
     accountTooltip: 'Signed in as @{name} (click for account details)',
     starTooltip: 'Star this project on GitHub ⭐',
-    star: 'Star'
+    star: 'Star',
+    languageZh: '简体中文',
+    languageEn: 'English'
   },
 
   home: {
@@ -42,6 +40,8 @@ export const en = {
     subtitle:
       'Images, multi-image carousels, Reels and Stories (session required). Everything is parsed locally — nothing is uploaded.',
     tryLabel: 'Try:',
+    exampleProfile: '@instagram profile',
+    examplePost: 'Example post',
     steps: {
       paste: 'Paste a link',
       pasteDesc: 'Post / Reels / profile link, or type a username',
@@ -52,7 +52,6 @@ export const en = {
       manage: 'Manage locally',
       manageDesc: 'Organized by username / date / type, revisit anytime'
     },
-    dragHere: 'Drop to parse the link',
     parsing: 'Parsing…'
   },
 
@@ -121,9 +120,6 @@ export const en = {
   },
 
   grid: {
-    carouselBadge: '{n} images',
-    videoBadge: 'Video',
-    downloadItem: 'Download this item',
     copyLink: 'Copy link',
     openInBrowser: 'Open in browser',
     revealFile: 'Show in folder',
@@ -193,9 +189,7 @@ export const en = {
 
   library: {
     title: 'Library',
-    fullscreen: 'Fullscreen library',
     fullscreenTitle: 'Switch to fullscreen library (grid view + more filters)',
-    empty: 'Library is empty — downloaded media will appear here',
     openItem: 'Open',
     totalFiles: '{n} files in total',
     imagesSuffix: '{n} images',
@@ -222,7 +216,6 @@ export const en = {
     collapse: 'Collapse',
     title: 'Library',
     refresh: 'Refresh',
-    searchPlaceholder: 'Search author / filename…',
     sortNewest: 'Newest first',
     sortOldest: 'Oldest first',
     sortAuthor: 'By author',
@@ -239,7 +232,6 @@ export const en = {
     clearSelection: 'Deselect all',
     selectAll: 'Select all results',
     downloadSelected: 'Download selected ({n})',
-    selectedCount: '{n} selected',
     help: 'Shortcuts & actions',
     helpTitle: 'How to use',
     helpClick: 'Click a card',
@@ -248,7 +240,6 @@ export const en = {
     helpMultiDesc: 'Multi-select cards (click again to deselect); while multi-selecting, a click toggles',
     helpSelectAll: '“Select all results” at the bottom',
     helpSelectAllDesc: 'Select everything matching the current filter, ready for batch download',
-    loadedCount: '{n} items',
     statsLine: '{total} items · {img} images · {vid} videos',
     searchAll: 'Search author / shortcode / filename…',
     clearFilters: 'Clear filters',
@@ -259,8 +250,6 @@ export const en = {
     helpEsc: 'Exit step by step: help/dropdown → clear selection → close viewer → collapse library',
     helpFilterSort: 'Type (all/images/videos), author dropdown, four sort modes cycled',
     helpArrows: '← → arrow keys',
-    addFailed: 'Failed to enqueue',
-    queued: 'Added to download queue: {n} items',
     loadFailed: 'Failed to load library',
     escHint: 'Esc: selection → filters → close'
   },
@@ -273,11 +262,7 @@ export const en = {
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'System',
-    language: 'Language',
-    languageDesc: 'UI language; defaults to the system setting (changes apply immediately)',
     languageAuto: 'System',
-    languageZh: '简体中文',
-    languageEn: 'English',
     download: 'Download',
     downloadDesc: 'Save location & concurrency',
     downloadDir: 'Download directory',
@@ -314,19 +299,9 @@ export const en = {
     privacy: 'Privacy & account safety',
     privacyDesc: 'Control when your IG session is used',
     anonymousFirst: 'Anonymous-first',
-    anonymousFirstHint:
-      'Public content is always fetched anonymously; your session is only retried after an explicit login wall (recommended)',
     warnAccountUse: 'Confirm account-backed actions',
-    warnAccountUseHint: 'Show a risk warning before opening Stories and other session-backed content',
-    autoCache: 'Cache images automatically',
-    autoCacheHint: 'Cache avatars and thumbnails locally so they survive link expiry',
     account: 'Instagram account',
-    accountDesc: 'Login state & account actions',
-    notLoggedIn: 'Not logged in',
-    loggedInAs: 'Logged in: @{name}',
     login: 'Log in to Instagram',
-    relogin: 'Log in again',
-    logout: 'Log out',
     advanced: 'Advanced',
     pasteCookie: 'Paste session cookie manually',
     pasteCookieHint:
@@ -338,7 +313,6 @@ export const en = {
     cacheHint:
       'Avatars and thumbnails are cached locally so images keep working after Instagram links expire. Clearing re-caches on next browse.',
     clearCache: 'Clear image cache',
-    downloadHistory: 'Download history',
     recordsCount: '{n} records',
     historyHint: { pre: 'Clearing removes the history list — ', bold: 'files already on disk are not deleted', post: '.' },
     clearHistory: 'Clear download history',
@@ -377,7 +351,6 @@ export const en = {
 
   account: {
     title: 'Instagram account',
-    identity: 'Identity',
     unknownAccount: 'unknown account',
     connected: 'Instagram account connected',
     openProfile: 'Open my profile in browser',
@@ -416,10 +389,6 @@ export const en = {
     waitingLogin: 'Waiting for login…',
     loggedOut: 'Logged out; local session cleared',
     logoutFailed: 'Logout failed',
-    loginOk: 'Logged in to Instagram: @{name}',
-    loginCancelled: 'Login canceled',
-    loginFailed: 'No login detected, please try again',
-    loginError: 'Login failed'
   },
 
   accountConfirm: {
@@ -432,7 +401,6 @@ export const en = {
   download: {
     queued: 'Added to download queue: {n} items',
     queueFailed: 'Failed to enqueue',
-    done: 'Download complete',
     workerDown: 'Parser error, restarting…'
   },
 
@@ -440,9 +408,5 @@ export const en = {
     dropHere: 'Drop to parse the link'
   },
 
-  skeleton: {
-    followers: 'Followers',
-    posts: 'Posts'
-  }
 } as const
 

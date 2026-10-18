@@ -26,8 +26,12 @@ export function EmptyState({ onExample }: { onExample: (text: string) => void })
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-subtle">
           {t('home.tryLabel')}
           <Chip onClick={() => onExample('instagram')}>instagram</Chip>
-          <Chip onClick={() => onExample('https://www.instagram.com/instagram/')}>@instagram</Chip>
-          <Chip onClick={() => onExample('https://www.instagram.com/p/B1LbfVPlwIA/')}>Demo</Chip>
+          <Chip onClick={() => onExample('https://www.instagram.com/instagram/')}>
+            {t('home.exampleProfile')}
+          </Chip>
+          <Chip onClick={() => onExample('https://www.instagram.com/p/B1LbfVPlwIA/')}>
+            {t('home.examplePost')}
+          </Chip>
         </div>
       </motion.div>
 

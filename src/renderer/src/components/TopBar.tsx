@@ -93,7 +93,11 @@ export function TopBar({
     setLangOpen(false)
   }
 
-  const langLabel: Record<Locale, string> = { 'zh-CN': '简体中文', en: 'English' }
+  // 语言名以其自身文字显示（不随界面语言翻译）
+  const langLabel: Record<Locale, string> = {
+    'zh-CN': t('topBar.languageZh'),
+    en: t('topBar.languageEn')
+  }
 
   return (
     <div className="flex h-full items-center gap-3">
@@ -176,7 +180,7 @@ export function TopBar({
                   locale === 'zh-CN' ? 'text-rose-600 dark:text-rose-400' : 'text-app'
                 }`}
               >
-                简体中文
+                {t('topBar.languageZh')}
                 {locale === 'zh-CN' && <span aria-hidden>✓</span>}
               </button>
               <button
@@ -186,7 +190,7 @@ export function TopBar({
                   locale === 'en' ? 'text-rose-600 dark:text-rose-400' : 'text-app'
                 }`}
               >
-                English
+                {t('topBar.languageEn')}
                 {locale === 'en' && <span aria-hidden>✓</span>}
               </button>
               <div className="my-1 h-px bg-app-strong" />

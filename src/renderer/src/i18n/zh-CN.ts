@@ -9,18 +9,13 @@ export const zhCN = {
   common: {
     cancel: '取消',
     confirm: '确认',
-    close: '关闭',
     save: '保存',
     done: '完成',
-    delete: '删除',
-    download: '下载',
     retry: '重试',
     loading: '加载中…',
     image: '图片',
     video: '视频',
     unknownAuthor: '未知作者',
-    all: '全部',
-    /** 提示语 + 原始错误信息（标点随语言变化，勿在调用处硬编码） */
     errorDetail: '{prefix}：{detail}'
   },
 
@@ -38,7 +33,10 @@ export const zhCN = {
     loginTooltip: '登录 Instagram 账号（用于 Stories / 主页归档）',
     accountTooltip: '已登录 Instagram：@{name}（点击查看账号详情）',
     starTooltip: '在 GitHub 上 Star 这个项目 ⭐',
-    star: 'Star'
+    star: 'Star',
+    // 语言名以其自身文字显示，两本字典里的值保持一致
+    languageZh: '简体中文',
+    languageEn: 'English'
   },
 
   // ── 主页 / 空状态 ──
@@ -47,6 +45,8 @@ export const zhCN = {
     subtitle:
       '支持图片、Carousel 多图、Reels 视频与 Stories（需登录会话）。 全部解析在本地完成，不上传任何数据。',
     tryLabel: '试试：',
+    exampleProfile: '@instagram 主页',
+    examplePost: '示例帖子',
     steps: {
       paste: '粘贴链接',
       pasteDesc: '帖子 / Reels / 主页链接，或直接输入用户名',
@@ -57,7 +57,6 @@ export const zhCN = {
       manage: '本地管理',
       manageDesc: '按 用户名 / 日期 / 类型 归档，可随时回访'
     },
-    dragHere: '松开以上传链接',
     parsing: '正在解析…'
   },
 
@@ -132,9 +131,6 @@ export const zhCN = {
 
   // ── 网格卡片 / 查看器 ──
   grid: {
-    carouselBadge: '{n} 图',
-    videoBadge: '视频',
-    downloadItem: '下载此项',
     copyLink: '复制链接',
     openInBrowser: '在浏览器打开',
     revealFile: '打开所在文件夹',
@@ -207,9 +203,7 @@ export const zhCN = {
   // ── 库面板（侧边） ──
   library: {
     title: '媒体库',
-    fullscreen: '全屏媒体库',
     fullscreenTitle: '切换到全屏媒体库（网格视图 + 更多筛选）',
-    empty: '媒体库为空，下载的媒体会出现在这里',
     openItem: '打开',
     totalFiles: '共 {n} 个文件',
     imagesSuffix: '{n} 图片',
@@ -238,7 +232,6 @@ export const zhCN = {
     collapse: '收起',
     title: '媒体库',
     refresh: '刷新',
-    searchPlaceholder: '搜索作者 / 文件名…',
     sortNewest: '最新优先',
     sortOldest: '最早优先',
     sortAuthor: '按作者',
@@ -255,7 +248,6 @@ export const zhCN = {
     clearSelection: '取消全选',
     selectAll: '全选结果',
     downloadSelected: '下载所选 ({n})',
-    selectedCount: '已选 {n} 项',
     help: '快捷键与操作说明',
     helpTitle: '操作说明',
     helpClick: '单击卡片',
@@ -264,7 +256,6 @@ export const zhCN = {
     helpMultiDesc: '多选卡片（再点取消）；多选态下单击即切换选中',
     helpSelectAll: '底部「全选结果」',
     helpSelectAllDesc: '选中当前筛选出的全部内容，可一键批量下载',
-    loadedCount: '{n} 项',
     statsLine: '{total} 项 · 图片 {img} · 视频 {vid}',
     searchAll: '搜索作者 / shortcode / 文件名…',
     clearFilters: '清除过滤条件',
@@ -275,8 +266,6 @@ export const zhCN = {
     helpEsc: '逐级退出：帮助/下拉 → 清除多选 → 关闭查看器 → 收起全屏库',
     helpFilterSort: '类型（全部/图片/视频）、作者下拉、四种排序循环切换',
     helpArrows: '← → 方向键',
-    addFailed: '加入队列失败',
-    queued: '已加入下载队列：{n} 项',
     loadFailed: '加载媒体库失败',
     escHint: 'Esc：选区 → 筛选 → 关闭'
   },
@@ -290,11 +279,7 @@ export const zhCN = {
     themeLight: '浅色',
     themeDark: '深色',
     themeSystem: '跟随系统',
-    language: '语言',
-    languageDesc: '界面显示语言；默认跟随系统（应用内切换立即生效）',
     languageAuto: '跟随系统',
-    languageZh: '简体中文',
-    languageEn: 'English',
     download: '下载',
     downloadDesc: '保存位置与并发',
     downloadDir: '下载目录',
@@ -331,19 +316,9 @@ export const zhCN = {
     privacy: '隐私与账号安全',
     privacyDesc: '控制何时使用你的 IG 会话',
     anonymousFirst: '匿名优先',
-    anonymousFirstHint:
-      '公开内容一律匿名获取；只有被登录墙拒绝时才以你的会话重试（推荐保持开启）',
     warnAccountUse: '账号功能二次确认',
-    warnAccountUseHint: 'Stories 等需要账号的内容，访问前弹窗提醒风险',
-    autoCache: '自动缓存图片',
-    autoCacheHint: '头像与缩略图缓存到本机，链接过期后仍可显示',
     account: 'Instagram 账号',
-    accountDesc: '登录状态与账号操作',
-    notLoggedIn: '未登录',
-    loggedInAs: '已登录：@{name}',
     login: '登录 Instagram',
-    relogin: '重新登录',
-    logout: '退出登录',
     advanced: '高级',
     pasteCookie: '手动粘贴会话 Cookie',
     pasteCookieHint:
@@ -354,7 +329,6 @@ export const zhCN = {
     filesCount: '{n} 个文件',
     cacheHint: '头像与缩略图缓存在本机，避免 Instagram 链接过期后图片无法显示。清空后再次浏览会重新缓存。',
     clearCache: '清空图片缓存',
-    downloadHistory: '下载历史',
     recordsCount: '{n} 条记录',
     historyHint: { pre: '清空的是历史列表，', bold: '已下载到磁盘的文件不会被删除', post: '。' },
     clearHistory: '清空下载历史',
@@ -394,7 +368,6 @@ export const zhCN = {
   // ── 账号面板 ──
   account: {
     title: 'Instagram 账号',
-    identity: '身份',
     unknownAccount: '未知账号',
     connected: '已连接 Instagram 账号',
     openProfile: '在浏览器中打开我的主页',
@@ -431,10 +404,6 @@ export const zhCN = {
     waitingLogin: '等待登录…',
     loggedOut: '已退出登录并清除本地会话',
     logoutFailed: '退出失败',
-    loginOk: '已登录 Instagram：@{name}',
-    loginCancelled: '已取消登录',
-    loginFailed: '未检测到登录状态，请重试',
-    loginError: '登录失败'
   },
 
   // ── 账号风险确认 ──
@@ -449,7 +418,6 @@ export const zhCN = {
   download: {
     queued: '已加入下载队列：{n} 项',
     queueFailed: '加入队列失败',
-    done: '下载完成',
     workerDown: '解析服务异常，正在重启…'
   },
 
@@ -458,11 +426,6 @@ export const zhCN = {
     dropHere: '松开以上传链接'
   },
 
-  // ── 骨架屏 ──
-  skeleton: {
-    followers: '粉丝',
-    posts: '帖子'
-  }
 } as const
 
 export type Dict = typeof zhCN
