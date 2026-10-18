@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { MediaCollection, MediaItem, ProfileUser, AppError } from '@shared/types'
-import { ERROR_TEXT } from '@shared/types'
 import { classifyIgUrl } from '@shared/ig-url'
+import { AppErrorException } from '@/lib/app-error'
 
 export interface ProfilePage {
   user: ProfileUser
@@ -38,10 +38,6 @@ interface LibraryState {
   /** 回到主页（清空解析结果与选择） */
   goHome: () => void
   reset: () => void
-}
-
-function errText(code: AppError['code']): string {
-  return ERROR_TEXT[code] ?? ERROR_TEXT.E_NETWORK
 }
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
@@ -118,7 +114,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
             page: { ...(prev as { page: ProfilePage }).page, loadingMore: false, cursor: null }
           }
         })
-        throw new Error(errText(res.error.code))
+        // 只带错误码，文案由渲染层按当前语言解析（store 不该持有文案）
+        throw new AppErrorException(res.error.code, res.error.message)
       }
       set({ view: { mode: 'error', error: res.error, canRetry: true, lastInput: username } })
       return

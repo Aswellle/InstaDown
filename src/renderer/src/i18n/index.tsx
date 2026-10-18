@@ -60,6 +60,8 @@ type DictValue = string | number | ((...args: never[]) => string) | object
 
 export type TFn = {
   (path: string, vars?: Record<string, string | number>): string
+  /** 键是否存在（用于动态拼接的键，如 error.${code}） */
+  has(path: string): boolean
   // 函数型词条（如 download.parseHint）直接取原始值
   raw<T = DictValue>(path: string): T
 }
@@ -146,6 +148,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       return path
     }) as TFn
     fn.raw = <T,>(path: string): T => resolvePath(dict, path) as T
+    fn.has = (path: string): boolean => typeof resolvePath(dict, path) === 'string'
     return fn
   }, [locale])
 

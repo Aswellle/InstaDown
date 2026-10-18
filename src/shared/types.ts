@@ -127,16 +127,3 @@ export interface MediaRow {
   taken_at: number | null
   created_at: number
 }
-
-export const ERROR_TEXT: Record<AppErrorCode, string> = {
-  E_INVALID_URL: '链接无效：请输入 Instagram 帖子 / Reels / 主页链接或用户名',
-  E_PARSE_FAILED: '解析失败：未找到可下载的媒体',
-  E_IG_RATE_LIMIT: '请求过于频繁：Instagram 限流中，请稍后再试',
-  E_IG_LOGIN_REQUIRED: '需要登录：请在设置中粘贴 Instagram 会话 Cookie（仅保存在本机）',
-  E_IG_PRIVATE: '该账号为私密账号，无法获取',
-  E_IG_NOT_FOUND: '未找到：帖子或用户不存在（也可能是私密内容）',
-  E_WORKER_DOWN: '解析服务未就绪：正在重启，请稍后重试',
-  E_NETWORK: '网络错误：请检查网络连接',
-  E_DISK: '磁盘错误：无法写入目标目录',
-  E_CANCELED: '已取消'
-}

@@ -23,6 +23,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { MediaRow } from '@shared/types'
 import { Button, Skeleton, Spinner } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
+import { appErrorText, errorMessage } from '@/lib/app-error'
 import { isProbablyIgUrl, classifyIgUrl } from '@shared/ig-url'
 import { useApplyTheme, useIsDark } from '@/lib/theme'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -120,7 +121,7 @@ export default function App() {
       const text = e.dataTransfer?.getData('text/plain') || e.dataTransfer?.getData('text/uri-list') || ''
       if (text && isProbablyIgUrl(text)) {
         toast(t('clipboard.dropDetected'))
-        void parse(text).catch((err) => toast.error((err as Error).message))
+        void parse(text).catch((err) => toast.error(errorMessage(err)))
       }
     }
 
@@ -222,7 +223,7 @@ export default function App() {
 
   const handleParse = useCallback(
     (input: string) => {
-      void parse(input).catch((e) => toast.error((e as Error).message))
+      void parse(input).catch((e) => toast.error(errorMessage(e)))
     },
     [parse]
   )
@@ -498,9 +499,7 @@ export default function App() {
                 <AlertTriangle className="h-10 w-10 text-amber-400" />
                 <h2 className="mt-4 text-base font-semibold text-app">{t('parse.failed')}</h2>
                 <p className="mt-2 text-sm text-muted">
-                  {t(`error.${view.error.code}`) !== `error.${view.error.code}`
-                    ? t(`error.${view.error.code}`)
-                    : view.error.message}
+                  {appErrorText(view.error.code, view.error.message)}
                 </p>
 
                 {/* 登录墙：直接提供登录入口，无需用户自己去设置里找 */}
@@ -616,7 +615,7 @@ export default function App() {
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          void loadMore().catch((e) => toast.error((e as Error).message))
+                          void loadMore().catch((e) => toast.error(errorMessage(e)))
                         }
                       >
                         <ChevronDown className="h-4 w-4" /> {t('parse.loadMore')}
