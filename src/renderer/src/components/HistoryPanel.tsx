@@ -172,7 +172,7 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
             <div className="min-h-0 flex-1 overflow-y-auto">
               {loading ? (
                 <div className="flex items-center justify-center py-8 text-sm text-subtle">
-                  加载中…
+                  {t('common.loading')}
                 </div>
               ) : history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-subtle">

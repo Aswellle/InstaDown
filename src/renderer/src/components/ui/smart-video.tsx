@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { VideoOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/i18n'
 
 /**
  * 容错视频播放器：源不可用（CDN 链接过期 / 编解码不支持 / 网络中断）时
@@ -19,6 +20,7 @@ export function SmartVideo({
   autoPlay?: boolean
 }) {
   const [failed, setFailed] = useState(false)
+  const { t } = useI18n()
   useEffect(() => setFailed(false), [src])
 
   if (failed) {
@@ -30,14 +32,14 @@ export function SmartVideo({
         )}
       >
         <VideoOff className="h-8 w-8" />
-        <span className="text-xs">视频无法播放（链接可能已过期）</span>
+        <span className="text-xs">{t('viewer.videoBroken')}</span>
         <a
           href={src}
           target="_blank"
           rel="noreferrer"
           className="text-xs text-rose-500 underline"
         >
-          在新窗口打开原链接
+          {t('viewer.openOriginal')}
         </a>
       </div>
     )
