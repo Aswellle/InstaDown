@@ -82,14 +82,18 @@ const I18nContext = createContext<I18n | null>(null)
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale)
-  syncLocaleSnapshot(locale)
+  // 「跟随系统」必须是独立状态：它由 localStorage 是否为空决定，而
+  // 选中与当前一致的语言时 setLocaleState 不会触发重渲染，若挂在
+  // useMemo 里，下拉勾选与圆点会停留在旧状态。
+  const [followingSystem, setFollowingSystem] = useState(() => storedLocale() === null)
 
-  // 跟随系统语言变化（仅当用户没有显式选择时）
+  // 跟随系统语言变化（仅当用户没有显式选择时）。依赖 followingSystem：
+  // 应用内从「显式语言」切回「跟随系统」时监听才会挂上。
   useEffect(() => {
-    if (storedLocale()) return
+    if (!followingSystem) return
     const onMaybeChange = () => {
       const next = systemLocale()
-      setLocaleState((prev) => (prev !== next && !storedLocale() ? next : prev))
+      setLocaleState((prev) => (prev !== next ? next : prev))
     }
     // Electron 里切系统语言不会派发 languagechange，窗口重聚焦时补偿检测
     window.addEventListener('focus', onMaybeChange)
@@ -98,12 +102,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('focus', onMaybeChange)
       window.removeEventListener('languagechange', onMaybeChange)
     }
-  }, [])
+  }, [followingSystem])
 
   // <html lang> 同步：影响浏览器内建的字体选择/无障碍朗读；
   // 同时把语言同步给主进程（系统通知/原生对话框文案跟随渲染层）
   useEffect(() => {
     document.documentElement.lang = locale
+    syncLocaleSnapshot(locale)
     void window.instadown.setLocale(locale).catch(() => {
       /* 忽略：主进程未就绪时下次切换会补上 */
     })
@@ -116,6 +121,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       } catch {
         /* 忽略 */
       }
+      setFollowingSystem(true)
       setLocaleState(systemLocale())
     } else {
       try {
@@ -123,6 +129,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       } catch {
         /* 忽略 */
       }
+      setFollowingSystem(false)
       setLocaleState(l)
     }
   }, [])
@@ -143,8 +150,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [locale])
 
   const value = useMemo<I18n>(
-    () => ({ locale, setLocale, followingSystem: !storedLocale(), t }),
-    [locale, setLocale, t]
+    () => ({ locale, setLocale, followingSystem, t }),
+    [locale, setLocale, followingSystem, t]
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
