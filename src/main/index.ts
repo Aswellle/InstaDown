@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, nativeTheme, Notification, shell } from 'electron'
 import { join } from 'node:path'
 import { openDatabase } from './db/database'
 import { Repos } from './db/repos'
@@ -9,6 +9,7 @@ import { netTransport } from './services/net-transport'
 import { registerIpc } from './ipc'
 import { registerImageScheme, serveImageCache } from './services/image-cache'
 import { themeColorsFor } from '@shared/theme'
+import { uiLocale } from './services/ui-locale'
 
 /**
  * 主进程入口：窗口生命周期 + 服务装配（docs/02、03）。
@@ -41,8 +42,18 @@ async function bootstrap(): Promise<void> {
   const repos = new Repos(openDatabase(join(app.getPath('userData'), 'instadown.db')))
   const worker = new WorkerManager()
   const settings = new SettingsService(repos)
+  // 下载完成通知：由主进程直接创建（渲染层没有、也不需要这个通道；
+  // 通知文案的语言取自 ui-locale，跟随渲染层选择）
   const tasks = new TaskManager(repos, netTransport, () => {}, () => Date.now(), (filename, destPath) => {
-    win?.webContents.send('notification:download-complete', { filename, destPath })
+    if (!Notification.isSupported()) return
+    const notif = new Notification({
+      title: uiLocale() === 'zh-CN' ? '下载完成' : 'Download complete',
+      body: filename
+    })
+    notif.on('click', () => {
+      if (destPath) shell.showItemInFolder(destPath)
+    })
+    notif.show()
   })
 
   registerIpc({ win: () => win, worker, repos, settings, tasks })

@@ -91,7 +91,6 @@ declare global {
       openFile(path: string): Promise<void>
       openDownloadDir(): Promise<string | null>
       openExternal(url: string): Promise<void>
-      notifyDownloadComplete(filename: string, destPath: string): void
       onTaskEvent(cb: (ev: TaskEventMsg) => void): () => void
       onWorkerStatus(cb: (status: 'ready' | 'down') => void): () => void
     }

@@ -1,4 +1,4 @@
-import { BrowserWindow, app, dialog, ipcMain, clipboard, shell, Notification, nativeTheme } from 'electron'
+import { BrowserWindow, app, dialog, ipcMain, clipboard, shell, nativeTheme } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isProbablyIgUrl, classifyIgUrl } from '@shared/ig-url'
@@ -17,6 +17,7 @@ import type { SettingsService } from './services/settings'
 import type { TaskManager, EnqueueItem } from './services/queue'
 import { planPath, extFromUrl } from './services/files'
 import { toIpcHandler } from './ipc-helpers'
+import { setUiLocale, uiLocale } from './services/ui-locale'
 import {
   openInstagramLogin,
   clearInstagramLoginSession,
@@ -174,41 +175,14 @@ export function registerIpc(deps: IpcDeps): void {
     win()?.webContents.send('task:event', ev)
   })
 
-  // 系统通知（fire-and-forget）。文案语言跟随渲染层选择：
-  // 渲染层在语言切换时调用 window:setLocale 通知主进程；
-  // 主进程兜底用系统 locale 解析（简中 or 其它一律英文）。
-  //
-  // 注意不能在这里直接调 app.getLocale()：registerIpc 在 app.whenReady()
-  // 之前执行，此时 getLocale() 返回空串，会让兜底值恒为英文。
-  let uiLocaleOverride: Locale | null = null
-  const uiLocale = (): Locale => {
-    if (uiLocaleOverride) return uiLocaleOverride
-    const system = app.getLocale() || 'en'
-    return /^zh/i.test(system) ? 'zh-CN' : 'en'
-  }
-  const notifText = () =>
-    uiLocale() === 'zh-CN' ? { title: '下载完成' } : { title: 'Download complete' }
-  ipcMain.on('notification:download-complete', (_e, { filename, destPath }: { filename: string; destPath: string }) => {
-    if (!Notification.isSupported()) return
-    const { title } = notifText()
-    const notif = new Notification({
-      title,
-      body: filename
-    })
-    notif.on('click', () => {
-      if (destPath) shell.showItemInFolder(destPath)
-    })
-    notif.show()
-  })
-
   const handle = (channel: string, fn: (...args: never[]) => unknown): void => {
     // 必须剥离 Electron 传入的 event 参数（见 ipc-helpers.ts 的回归说明）
     ipcMain.handle(channel, toIpcHandler(fn as (...args: unknown[]) => unknown) as never)
   }
 
-  // 渲染层语言切换时同步到主进程（通知/对话框文案跟随）
+  // 渲染层语言切换时同步到主进程（原生对话框/系统通知文案跟随）
   handle('window:setLocale', (locale: Locale) => {
-    if (locale === 'zh-CN' || locale === 'en') uiLocaleOverride = locale
+    if (locale === 'zh-CN' || locale === 'en') setUiLocale(locale)
   })
 
   // ------------------------------------------------------------ 解析

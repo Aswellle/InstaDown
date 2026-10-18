@@ -62,9 +62,6 @@ const api = {
   openFile: (path: string) => ipcRenderer.invoke('file:open', path),
   openDownloadDir: () => ipcRenderer.invoke('file:openDownloadDir'),
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
-  notifyDownloadComplete: (filename: string, destPath: string) =>
-    ipcRenderer.send('notification:download-complete', { filename, destPath }),
-
   onTaskEvent: (cb: (ev: unknown) => void) => {
     const listener = (_e: Electron.IpcRendererEvent, ev: unknown) => cb(ev)
     ipcRenderer.on('task:event', listener)
