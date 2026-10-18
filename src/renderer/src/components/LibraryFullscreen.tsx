@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeft,
-  ArrowUpDown,
   Check,
   CheckSquare,
   CircleHelp,
@@ -13,8 +12,8 @@ import {
   Minimize2,
   RefreshCw,
   Search,
+  SlidersHorizontal,
   Square,
-  User as UserIcon,
   X,
 } from 'lucide-react'
 import type { MediaRow } from '@shared/types'
@@ -22,6 +21,12 @@ import { cn, formatDate, formatDuration } from '@/lib/utils'
 import { Button, Checkbox, Input } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { useI18n, type TFn } from '@/i18n'
+import {
+  loadLibraryPrefs,
+  saveLibraryPrefs,
+  type LibrarySort,
+  type LibraryTypeFilter
+} from '@/lib/library-prefs'
 
 /**
  * 全屏媒体库（独立的视觉模块）。
@@ -32,8 +37,10 @@ import { useI18n, type TFn } from '@/i18n'
  * 点击媒体在**应用内**查看/播放（MediaViewer），全程不跳浏览器。
  */
 
-type TypeFilter = 'all' | 'image' | 'video'
-type SortKey = 'date-desc' | 'date-asc' | 'author' | 'size-desc'
+type TypeFilter = LibraryTypeFilter
+type SortKey = LibrarySort
+
+const SORT_KEYS: SortKey[] = ['date-desc', 'date-asc', 'author', 'size-desc']
 
 function sortLabel(sort: SortKey, t: TFn): string {
   switch (sort) {
@@ -66,35 +73,57 @@ export function LibraryFullscreen({
   onRefresh: () => void
 }) {
   const { t } = useI18n()
+  // 视图偏好跨会话保留：排序、类型筛选是"我习惯怎么看"，每次进来
+  // 都回到默认值会让用户重复设置。
+  const prefs = useRef(loadLibraryPrefs()).current
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(prefs.typeFilter)
   const [author, setAuthor] = useState<string>('all')
-  const [sort, setSort] = useState<SortKey>('date-desc')
+  const [sort, setSort] = useState<SortKey>(prefs.sort)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [authorsOpen, setAuthorsOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const filterRef = useRef<HTMLDivElement>(null)
+
+  // 类型筛选与排序变化时写回
+  useEffect(() => {
+    saveLibraryPrefs({ typeFilter, sort })
+  }, [typeFilter, sort])
+
+  // 筛选条件是否偏离默认（决定按钮是否高亮）
+  const filtersActive = author !== 'all' || sort !== 'date-desc'
 
   useEffect(() => {
     if (open) {
       setSelected(new Set())
-      setAuthorsOpen(false)
+      setFiltersOpen(false)
       setHelpOpen(false)
     }
   }, [open])
 
-  // Esc 逐级退出：先关帮助/下拉，再清多选，最后关面板
+  // 点击外部关闭筛选抽屉
+  useEffect(() => {
+    if (!filtersOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (!filterRef.current?.contains(e.target as Node)) setFiltersOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    return () => window.removeEventListener('mousedown', onDown)
+  }, [filtersOpen])
+
+  // Esc 逐级退出：先关帮助/抽屉，再清多选，最后关面板
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       if (helpOpen) setHelpOpen(false)
-      else if (authorsOpen) setAuthorsOpen(false)
+      else if (filtersOpen) setFiltersOpen(false)
       else if (selected.size > 0) setSelected(new Set())
       else onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, selected.size, authorsOpen, helpOpen, onClose])
+  }, [open, selected.size, filtersOpen, helpOpen, onClose])
 
   const authors = useMemo(() => {
     const counts = new Map<string, number>()
@@ -164,133 +193,175 @@ export function LibraryFullscreen({
           transition={{ duration: 0.18 }}
           className="fixed inset-0 z-[55] flex flex-col bg-app"
         >
-          {/* ───────────── 顶栏：标题 + 统计 + 搜索 + 过滤 + 排序 ───────────── */}
-          <div className="flex h-14 shrink-0 items-center gap-3 border-b border-app px-4">
-            {/* 退出入口：醒目的返回按钮（回到主页面）—— 全屏模块必须有
-                清晰的"回去"路径，只靠右上角收起/Esc 用户会迷路 */}
+          {/* ───────────── 顶栏 ─────────────
+              分三段，只有中段（搜索）参与伸缩：
+                · 左：返回 + 标题 + 统计 —— shrink-0，不压缩
+                · 中：搜索 —— flex-1，min-w-0，窄窗口下先被压缩
+                · 右：筛选/排序/操作 —— shrink-0，按钮不换行不缩形
+              排序与作者筛选在窄窗口收纳进「筛选」抽屉（filtersOpen），
+              避免多个控件同时挤在 56px 高度里互相挤压变形。 */}
+          <div className="flex h-14 shrink-0 items-center gap-2 border-b border-app px-3">
+            {/* 退出入口：全屏模块必须有清晰的"回去"路径 */}
             <button
               onClick={onGoHome}
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-app px-3 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
-              title={t("libFull.back")}
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-app px-2.5 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
+              title={t('libFull.back')}
             >
-              <ArrowLeft className="h-4 w-4" /> {t("libFull.back")}
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden md:inline">{t('libFull.back')}</span>
             </button>
 
             <Grid2X2 className="h-5 w-5 shrink-0 text-rose-500" />
             <div className="shrink-0">
-              <div className="text-sm font-semibold text-app">{t("libFull.title")}</div>
-              <div className="text-[11px] text-subtle">
-                {t("libFull.statsLine", { total: items.length, img: imgCount, vid: vidCount })}
+              <div className="whitespace-nowrap text-sm font-semibold text-app">
+                {t('libFull.title')}
+              </div>
+              <div className="whitespace-nowrap text-[11px] text-subtle">
+                {t('libFull.statsLine', { total: items.length, img: imgCount, vid: vidCount })}
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+            {/* 搜索：唯一可伸缩元素。min-w-0 是关键 —— 缺了它输入框
+                不会收缩，会把自己和其他控件一起挤出可视区。 */}
+            <div className="relative mx-auto min-w-0 flex-1 sm:max-w-sm lg:max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("libFull.searchAll")}
-                className="h-9 pl-9"
+                placeholder={t('libFull.searchAll')}
+                className="h-9 pl-9 pr-8"
               />
-            </div>
-
-            {/* 类型过滤 */}
-            <div className="flex shrink-0 items-center gap-1 rounded-lg border border-app p-0.5">
-              {(
-                [
-                  ['all', t('libFull.filterAll'), null],
-                  ['image', t('libFull.filterImage'), ImageIcon],
-                  ['video', t('libFull.filterVideo'), Film]
-                ] as Array<[TypeFilter, string, typeof ImageIcon | null]>
-              ).map(([value, label, Icon]) => (
+              {search && (
                 <button
-                  key={value}
-                  onClick={() => setTypeFilter(value)}
-                  className={cn(
-                    'flex h-7 items-center gap-1 rounded-md px-2.5 text-xs transition-colors',
-                    typeFilter === value
-                      ? 'bg-rose-500 text-white'
-                      : 'text-muted hover:bg-surface-hover hover:text-app'
-                  )}
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-subtle hover:text-app"
+                  title={t('libFull.clearSearch')}
                 >
-                  {Icon && <Icon className="h-3.5 w-3.5" />}
-                  {label}
+                  <X className="h-3.5 w-3.5" />
                 </button>
-              ))}
+              )}
             </div>
 
-            {/* 作者过滤（下拉） */}
-            <div className="relative shrink-0">
-              <button
-                onClick={() => setAuthorsOpen((v) => !v)}
-                className={cn(
-                  'flex h-9 items-center gap-1.5 rounded-lg border border-app px-2.5 text-xs transition-colors hover:bg-surface-hover',
-                  author !== 'all' && 'border-rose-500/60 text-app'
-                )}
-                title={t('libFull.authorFilterTooltip')}
-              >
-                <UserIcon className="h-3.5 w-3.5" />
-                <span className="max-w-28 truncate">
-                  {author === 'all' ? t('libFull.allAuthors') : author}
-                </span>
-              </button>
-              <AnimatePresence>
-                {authorsOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.12 }}
-                    className="absolute right-0 top-10 z-10 max-h-80 w-56 overflow-y-auto rounded-xl border border-app bg-surface py-1 shadow-2xl"
+            {/* 右侧操作区：shrink-0 + whitespace-nowrap，永不换行变形 */}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {/* 类型过滤：图标 + 文字，窄窗口只留图标 */}
+              <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-app p-0.5">
+                {(
+                  [
+                    ['all', t('libFull.filterAll'), null],
+                    ['image', t('libFull.filterImage'), ImageIcon],
+                    ['video', t('libFull.filterVideo'), Film]
+                  ] as Array<[TypeFilter, string, typeof ImageIcon | null]>
+                ).map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    onClick={() => setTypeFilter(value)}
+                    className={cn(
+                      'flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs transition-colors',
+                      typeFilter === value
+                        ? 'bg-rose-500 text-white'
+                        : 'text-muted hover:bg-surface-hover hover:text-app'
+                    )}
+                    title={label}
                   >
-                    <AuthorOption
-                      label={`${t('libFull.allAuthors')}（${items.length}）`}
-                      active={author === 'all'}
-                      onClick={() => {
-                        setAuthor('all')
-                        setAuthorsOpen(false)
-                      }}
-                    />
-                    {authors.map(([name, count]) => (
-                      <AuthorOption
-                        key={name}
-                        label={`${name}（${count}）`}
-                        active={author === name}
-                        onClick={() => {
-                          setAuthor(name)
-                          setAuthorsOpen(false)
-                        }}
-                      />
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    {Icon ? (
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                    ) : null}
+                    <span className={Icon ? 'hidden lg:inline' : 'hidden sm:inline'}>{label}</span>
+                  </button>
+                ))}
+              </div>
 
-            {/* 排序（循环切换） */}
-            <button
-              onClick={() => {
-                const order: SortKey[] = ['date-desc', 'date-asc', 'author', 'size-desc']
-                const i = order.indexOf(sort)
-                setSort(order[(i + 1) % order.length])
-              }}
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-app px-2.5 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
-              title={t('libFull.sortTooltip')}
-            >
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              {sortLabel(sort, t)}
-            </button>
+              {/* 筛选抽屉：作者 + 排序（原本两个独立下拉各占一档宽度） */}
+              <div className="relative shrink-0" ref={filterRef}>
+                <button
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  className={cn(
+                    'flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs transition-colors hover:bg-surface-hover',
+                    filtersActive
+                      ? 'border-rose-500/60 text-app'
+                      : 'border-app text-muted hover:text-app'
+                  )}
+                  title={t('libFull.filtersTooltip')}
+                  aria-haspopup="menu"
+                  aria-expanded={filtersOpen}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline">{t('libFull.filters')}</span>
+                  {filtersActive && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
+                </button>
+                <AnimatePresence>
+                  {filtersOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute right-0 top-11 z-20 w-64 rounded-xl border border-app bg-surface p-2 shadow-2xl"
+                    >
+                      <div className="px-2 pb-1 text-[11px] font-medium text-subtle">
+                        {t('libFull.authorFilterTooltip')}
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        <AuthorOption
+                          label={`${t('libFull.allAuthors')}（${items.length}）`}
+                          active={author === 'all'}
+                          onClick={() => setAuthor('all')}
+                        />
+                        {authors.map(([name, count]) => (
+                          <AuthorOption
+                            key={name}
+                            label={`${name}（${count}）`}
+                            active={author === name}
+                            onClick={() => setAuthor(name)}
+                          />
+                        ))}
+                      </div>
+                      <div className="my-1.5 h-px bg-app-strong" />
+                      <div className="px-2 pb-1 text-[11px] font-medium text-subtle">
+                        {t('libFull.sortTooltip')}
+                      </div>
+                      {SORT_KEYS.map((key) => (
+                        <AuthorOption
+                          key={key}
+                          label={sortLabel(key, t)}
+                          active={sort === key}
+                          onClick={() => setSort(key)}
+                        />
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-            <div className="flex shrink-0 items-center gap-1">
-              {/* 快捷键/操作提示（隐藏操作的可见化） */}
-              <Button variant="ghost" size="icon" onClick={() => setHelpOpen(true)} title={t("libFull.help")}>
+              {/* 操作：帮助 / 刷新 / 收起 */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0"
+                onClick={() => setHelpOpen(true)}
+                title={t('libFull.help')}
+              >
                 <CircleHelp className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={onRefresh} title={t("libFull.refresh")}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0"
+                onClick={onRefresh}
+                title={t('libFull.refresh')}
+              >
                 <RefreshCw className="h-4 w-4" />
               </Button>
-              <Button variant="secondary" size="sm" onClick={onClose} title={t("libFull.escHint")}>
-                <Minimize2 className="h-4 w-4" /> {t("libFull.collapse")}
+              <Button
+                variant="secondary"
+                size="sm"
+                className="shrink-0"
+                onClick={onClose}
+                title={t('libFull.escHint')}
+              >
+                <Minimize2 className="h-4 w-4" />
+                <span className="hidden md:inline">{t('libFull.collapse')}</span>
               </Button>
             </div>
           </div>
@@ -315,11 +386,10 @@ export function LibraryFullscreen({
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 p-4">
-                {filtered.map((item, idx) => (
+                {filtered.map((item) => (
                   <FullscreenCard
                     key={item.id}
                     item={item}
-                    index={idx}
                     selected={selected.has(item.id)}
                     selectionMode={selected.size > 0}
                     onToggle={(additive) => toggleSelect(item.id, additive)}
@@ -452,14 +522,12 @@ function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 function FullscreenCard({
   item,
-  index,
   selected,
   selectionMode,
   onToggle,
   onOpen
 }: {
   item: MediaRow
-  index: number
   selected: boolean
   selectionMode: boolean
   onToggle: (additive: boolean) => void
@@ -467,11 +535,10 @@ function FullscreenCard({
 }) {
   const { t } = useI18n()
   const thumb = item.thumb_url || item.url
+  // 不做逐卡入场动画：大库（数百项）下每张卡片各跑一次 framer-motion
+  // 动画会让打开/筛选时明显掉帧；图片本身由 SmartImage 淡入。
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, delay: Math.min(index * 0.012, 0.2), ease: 'easeOut' }}
+    <div
       style={{ contentVisibility: 'auto' }}
       className={cn(
         'group relative cursor-pointer overflow-hidden rounded-xl border bg-surface transition-colors',
@@ -524,6 +591,6 @@ function FullscreenCard({
           {formatDate(item.created_at)}
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
