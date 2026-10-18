@@ -227,7 +227,7 @@ export function LibraryFullscreen({
                   'flex h-9 items-center gap-1.5 rounded-lg border border-app px-2.5 text-xs transition-colors hover:bg-surface-hover',
                   author !== 'all' && 'border-rose-500/60 text-app'
                 )}
-                title={t("libFull.sortAuthor")}
+                title={t('libFull.authorFilterTooltip')}
               >
                 <UserIcon className="h-3.5 w-3.5" />
                 <span className="max-w-28 truncate">
@@ -275,7 +275,7 @@ export function LibraryFullscreen({
                 setSort(order[(i + 1) % order.length])
               }}
               className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-app px-2.5 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-app"
-              title={t("libFull.sortAuthor")}
+              title={t('libFull.sortTooltip')}
             >
               <ArrowUpDown className="h-3.5 w-3.5" />
               {sortLabel(sort, t)}
@@ -416,7 +416,7 @@ function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     [t('libFull.helpArrows'), t('libFull.helpPrevNext')],
     ['Enter', t('libFull.helpEnter')],
     ['Esc', t('libFull.helpEsc')],
-    [t('libFull.filterAll') + ' + ' + t('libFull.sortAuthor'), t('libFull.helpFilterSort')],
+    [t('libFull.helpFilterSortLabel'), t('libFull.helpFilterSort')],
   ]
   return (
     <div
