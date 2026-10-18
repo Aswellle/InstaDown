@@ -307,14 +307,20 @@ export function LibraryFullscreen({
                         <AuthorOption
                           label={`${t('libFull.allAuthors')}（${items.length}）`}
                           active={author === 'all'}
-                          onClick={() => setAuthor('all')}
+                          onClick={() => {
+                            setAuthor('all')
+                            setFiltersOpen(false)
+                          }}
                         />
                         {authors.map(([name, count]) => (
                           <AuthorOption
                             key={name}
                             label={`${name}（${count}）`}
                             active={author === name}
-                            onClick={() => setAuthor(name)}
+                            onClick={() => {
+                              setAuthor(name)
+                              setFiltersOpen(false)
+                            }}
                           />
                         ))}
                       </div>
@@ -327,7 +333,10 @@ export function LibraryFullscreen({
                           key={key}
                           label={sortLabel(key, t)}
                           active={sort === key}
-                          onClick={() => setSort(key)}
+                          onClick={() => {
+                            setSort(key)
+                            setFiltersOpen(false)
+                          }}
                         />
                       ))}
                     </motion.div>
