@@ -9,6 +9,7 @@
 **Archive Instagram media to your own disk — completely.**
 
 [![Release](https://img.shields.io/badge/Release-v0.3.1-rose?logo=github)](../../releases)
+[![Downloads](https://img.shields.io/github/downloads/Aswellle/InstaDown/total?label=Downloads&color=0d9488&logo=github)](../../releases)
 [![Tests](https://img.shields.io/badge/Tests-111%20passing-16a34a?logo=vitest)](#development)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?logo=electron)](#download)
 [![License](https://img.shields.io/badge/License-MIT-8b5cf6)](LICENSE)
