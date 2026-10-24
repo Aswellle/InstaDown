@@ -58,10 +58,21 @@ export function TaskDock() {
 
   return (
     <div className="shrink-0 border-t border-app bg-app">
-      {/* 汇总条 */}
-      <button
-        className="flex h-11 w-full items-center gap-3 px-4 text-left hover:bg-surface-hover"
+      {/* 汇总条。行容器不能用 button：内部还有"清除已完成"按钮，
+          button 嵌 button 是无效 HTML，且点击会冒泡触发折叠/展开 */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        className="flex h-11 w-full cursor-pointer select-none items-center gap-3 px-4 text-left hover:bg-surface-hover"
         onClick={() => setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setExpanded(!expanded)
+          }
+        }}
       >
         <Download className="h-4 w-4 text-rose-400" />
         <span className="text-sm text-app">
@@ -82,14 +93,22 @@ export function TaskDock() {
         )}
         <span className="ml-auto flex items-center gap-2">
           {hasCompleted && (
-            <Button variant="ghost" size="sm" onClick={() => setConfirmClear(true)} title={t("task.clearTitle")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                setConfirmClear(true)
+              }}
+              title={t("task.clearTitle")}
+            >
               <Trash2 className="h-3.5 w-3.5" />
               <span className="ml-1">{t("task.clearCompleted")}</span>
             </Button>
           )}
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
         </span>
-      </button>
+      </div>
 
       {/* 任务列表 */}
       <AnimatePresence initial={false}>
