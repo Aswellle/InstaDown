@@ -43,8 +43,9 @@ async function resolveSrc(url: string): Promise<string | null> {
         resolved.set(url, local)
         return local
       }
-      // 主进程未能缓存：回退到远端 URL
-      resolved.set(url, url)
+      // 主进程未能缓存：本次回退到远端 URL，但不把失败写入 resolved ——
+      // 缓存失败多为瞬时断连（主进程已带一次重试），记住失败会让同会话
+      // 内这张图永远走被防盗链拒绝的远端直连，破图到重新解析为止
       return url
     })
     .catch(() => null)

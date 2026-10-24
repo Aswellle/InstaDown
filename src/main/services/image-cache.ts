@@ -183,8 +183,19 @@ export function serveImageCache(): void {
   })
 }
 
-/** 下载并缓存；返回本地协议地址。失败时抛出，调用方回退到原始 URL。 */
+/** 下载并缓存；返回本地协议地址。失败时抛出，调用方回退到原始 URL。
+ *  网络失败重试一次：IG CDN 对并发的高分辨率图片请求偶发断连，
+ *  而回退路径（渲染层直接 <img> 远端 URL）会被 CDN 防盗链拒绝 ——
+ *  单次失败意味着这张缩略图永久破图，重试一次能救回绝大多数。 */
 export async function cacheImage(url: string): Promise<string> {
+  try {
+    return await cacheImageOnce(url)
+  } catch {
+    return cacheImageOnce(url)
+  }
+}
+
+async function cacheImageOnce(url: string): Promise<string> {
   if (!/^https?:/i.test(url)) throw new Error('unsupported url')
   const local = localUrlFor(url)
   if (cachedPath(url)) return local
