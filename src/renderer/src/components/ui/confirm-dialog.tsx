@@ -36,11 +36,15 @@ export function ConfirmDialog({
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
+      // stopImmediatePropagation：确认框叠在 Dialog 之上时，两者的 keydown
+      // 都挂在 window 上（capture vs bubble），stopPropagation 挡不住同元素
+      // 的后续监听器 —— 必须用它才能保证一次 Esc 只关确认框这一层。
       if (e.key === 'Escape') {
-        e.stopPropagation()
+        e.stopImmediatePropagation()
         onCancel()
       } else if (e.key === 'Enter') {
         e.preventDefault()
+        e.stopImmediatePropagation()
         onConfirm()
       }
     }

@@ -21,7 +21,14 @@ export function Dialog({
     if (!open) return
     const prevFocus = document.activeElement as HTMLElement | null
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        // 拦截同级的全局快捷键处理器（App 的逐级返回监听同一事件）：
+        // 对话框自己消费 Esc，一次按键只关一层。stopImmediatePropagation
+        // 而非依赖 App 侧的 DOM 检测 —— exit 动画未完成时 role="dialog"
+        // 仍是文档残留，按 DOM 存在判断会误吞后续 Esc。
+        e.stopImmediatePropagation()
+        onClose()
+      }
       if (e.key === 'Tab') {
         const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'

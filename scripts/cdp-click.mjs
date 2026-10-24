@@ -5,12 +5,14 @@
  * 因此无法暴露"点击无反应"这类 bug。Input.dispatchMouseEvent 走真实输入管线，
  * 能正确复现/验证。
  *
- * 用法: node scripts/cdp-click.mjs <port> <x> <y> [label]
+ * 用法: node scripts/cdp-click.mjs <port> <x> <y> [label] [clickCount]
+ *   clickCount=2 时发送原生双击（同一输入序列内，触发 dblclick）
  */
 const PORT = process.argv[2] || '9250'
 const X = parseInt(process.argv[3], 10)
 const Y = parseInt(process.argv[4], 10)
 const LABEL = process.argv[5] || ''
+const CLICKS = parseInt(process.argv[6], 10) || 1
 
 async function main() {
   const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json()
@@ -50,12 +52,15 @@ async function main() {
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: X, y: Y, button: 'none', clickCount: 0 })
   await new Promise((r) => setTimeout(r, 250))
 
-  // 3) 真实按下 + 抬起（完整点击）
-  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: X, y: Y, button: 'left', clickCount: 1 })
-  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: X, y: Y, button: 'left', clickCount: 1 })
+  // 3) 真实按下 + 抬起（完整点击；双击用同一 clickCount=2 序列）
+  for (let c = 1; c <= CLICKS; c++) {
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: X, y: Y, button: 'left', clickCount: c })
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: X, y: Y, button: 'left', clickCount: c })
+    await new Promise((r) => setTimeout(r, 80))
+  }
   await new Promise((r) => setTimeout(r, 900))
 
-  console.log(`[${LABEL}] dispatched real click`)
+  console.log(`[${LABEL}] dispatched real click x${CLICKS}`)
   ws.close()
 }
 main().catch((e) => {
