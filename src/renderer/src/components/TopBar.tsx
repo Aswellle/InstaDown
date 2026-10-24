@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { GithubIcon } from '@/components/ui/github-icon'
 import { useIgAccountStore } from '@/stores/ig-account'
+import { useSettingsStore } from '@/stores/settings'
 import { isProbablyIgUrl } from '@shared/ig-url'
 import { GITHUB_REPO_URL } from '@shared/repo'
 import { useI18n, type Locale } from '@/i18n'
@@ -27,11 +28,15 @@ export function TopBar({
   const langRef = useRef<HTMLDivElement>(null)
   const loggedIn = useIgAccountStore((s) => s.loggedIn)
   const profile = useIgAccountStore((s) => s.profile)
+  /** 剪贴板自动检测开关（设置 → 行为）：关闭后完全不读取剪贴板 */
+  const autoClipboard = useSettingsStore((s) => s.settings?.autoClipboard ?? true)
   const { t, locale, setLocale, followingSystem } = useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 窗口聚焦时检测剪贴板中的 IG 链接（参考产品"一键粘贴"体验的桌面化）
+  // 窗口聚焦时检测剪贴板中的 IG 链接（参考产品"一键粘贴"体验的桌面化）。
+  // 受设置开关控制：关闭时不读取剪贴板（隐私承诺，docs/11）。
   useEffect(() => {
+    if (!autoClipboard) return
     let last = ''
     const check = async () => {
       try {
@@ -48,7 +53,7 @@ export function TopBar({
     const onFocus = () => void check()
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
-  }, [onAutoClipboard])
+  }, [onAutoClipboard, autoClipboard])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
