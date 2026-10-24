@@ -180,6 +180,16 @@ export function registerIpc(deps: IpcDeps): void {
     ipcMain.handle(channel, toIpcHandler(fn as (...args: unknown[]) => unknown) as never)
   }
 
+  /** file:open / file:reveal 的路径白名单：位于下载目录内，或已记录在
+   *  下载历史中。渲染层是安全边界——被攻破时不能借这两个通道用系统
+   *  默认程序打开任意文件（.exe/.bat 会被直接执行）。 */
+  const isKnownDownloadPath = (p: string): boolean => {
+    if (!p || !existsSync(p)) return false
+    const dir = settings.get().downloadDir
+    if (dir && (p === dir || p.startsWith(dir + '\\') || p.startsWith(dir + '/'))) return true
+    return repos.hasHistoryPath(p)
+  }
+
   // 渲染层语言切换时同步到主进程（原生对话框/系统通知文案跟随）
   handle('window:setLocale', (locale: Locale) => {
     if (locale === 'zh-CN' || locale === 'en') setUiLocale(locale)
@@ -373,7 +383,7 @@ export function registerIpc(deps: IpcDeps): void {
   })
 
   handle('file:open', async (path: string) => {
-    if (path && existsSync(path)) {
+    if (isKnownDownloadPath(path)) {
       const result = await shell.openPath(path)
       if (result) throw new Error(result)
     }
@@ -413,7 +423,7 @@ export function registerIpc(deps: IpcDeps): void {
   handle('settings:session:has', () => settings.hasSession())
   handle('clipboard:readText', () => clipboard.readText())
   handle('file:reveal', (path: string) => {
-    if (path && existsSync(path)) shell.showItemInFolder(path)
+    if (isKnownDownloadPath(path)) shell.showItemInFolder(path)
   })
   handle('shell:openExternal', async (url: string) => {
     // 只放行 http(s)：openExternal 会把任意协议交给系统默认处理器，

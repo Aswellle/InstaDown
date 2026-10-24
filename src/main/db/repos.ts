@@ -168,6 +168,12 @@ export class Repos {
       .all(limit) as unknown as HistoryRow[]
   }
 
+  /** 该路径是否出现在下载历史中（file:open/reveal 的放行依据之一） */
+  hasHistoryPath(path: string): boolean {
+    const row = this.db.prepare('SELECT 1 FROM history WHERE path = ? LIMIT 1').get(path)
+    return row != null
+  }
+
   clearHistory(): void {
     this.db.prepare('DELETE FROM history').run()
   }
