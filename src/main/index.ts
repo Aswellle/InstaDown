@@ -90,8 +90,15 @@ async function bootstrap(): Promise<void> {
     if (process.platform !== 'darwin') app.quit()
   })
 
-  app.on('before-quit', () => {
-    void worker.stop()
+  // 优雅退出：等 worker 子进程真正结束后再退出进程。
+  // 此前 fire-and-forget 的 stop() 与进程退出竞态，Windows 下可能
+  // 遗留孤儿 python 进程。
+  let quitting = false
+  app.on('before-quit', (e) => {
+    if (quitting) return
+    quitting = true
+    e.preventDefault()
+    void worker.stop().finally(() => app.quit())
   })
 }
 
