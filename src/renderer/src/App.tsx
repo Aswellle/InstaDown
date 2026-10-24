@@ -279,10 +279,14 @@ export default function App() {
     }
   }, [t])
 
-  // 键盘：Ctrl+A 全选 / Esc 逐级返回 / Ctrl+Enter 下载
+  // 键盘：Ctrl+A 全选 / Esc 逐级返回 / Ctrl+Enter 下载。
+  // 有模态对话框打开时全局快捷键让位（Esc/Tab/焦点由对话框自身处理，
+  // 否则一次 Esc 会同时关闭对话框并清掉背后的选区，Ctrl+A/Ctrl+Enter
+  // 也不应作用于被遮挡的网格）。
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && items.length > 0) {
         e.preventDefault()
         selectAll()
