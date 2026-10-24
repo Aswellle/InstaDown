@@ -20,6 +20,21 @@ const LOGIN_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
+/** 隐藏窗口单飞互斥：同一时刻只允许一个隐藏 BrowserWindow 在登录分区上
+ *  抓取。并发的 profile 归档 / 剪贴板自动解析 / 手动解析会各自开窗，
+ *  等于同时以同一登录身份高频访问 IG —— 重则触发会话风控失效
+ *  （"Heavy scraping invalidates the session"）。所有触发隐藏窗口的
+ *  操作经此串行化，代价是排队等待。 */
+let windowChain: Promise<unknown> = Promise.resolve()
+function serialized<T>(fn: () => Promise<T>): Promise<T> {
+  const run = windowChain.then(fn, fn)
+  windowChain = run.then(
+    () => undefined,
+    () => undefined
+  )
+  return run
+}
+
 /** 从分区中提取 instagram.com 的 Cookie 头字符串。
  *  注意：Electron 的 cookies.get({domain}) 是**精确匹配**，不会做后缀匹配，
  *  而 IG 的 cookie 可能挂在 .instagram.com / www.instagram.com / i.instagram.com
@@ -159,7 +174,7 @@ export function sessionLooksValid(p: ProbeResult | null): boolean {
  *
  * 返回 valid=true 表示会话可用，并尽量带上用户名/头像供 UI 展示。
  */
-async function verifyAuthenticated(): Promise<{
+async function verifyAuthenticatedImpl(): Promise<{
   valid: boolean
   username?: string
   avatar?: string
@@ -192,6 +207,11 @@ async function verifyAuthenticated(): Promise<{
   } catch {
     return finish({ valid: false })
   }
+}
+
+/** 导出的抓取入口一律走单飞互斥（见 serialized 说明） */
+function verifyAuthenticated(): Promise<{ valid: boolean; username?: string; avatar?: string }> {
+  return serialized(verifyAuthenticatedImpl)
 }
 
 /**
@@ -392,9 +412,16 @@ export interface ProfileShortcodes {
  * 拿到 shortcode 后，媒体本体走既有的公开 embed 解析（docs/dev/06），
  * 无需登录即可取到原始画质。
  */
-export async function listProfileShortcodes(
+export function listProfileShortcodes(
   username: string,
   scrollRounds = 0
+): Promise<ProfileShortcodes> {
+  return serialized(() => listProfileShortcodesImpl(username, scrollRounds))
+}
+
+async function listProfileShortcodesImpl(
+  username: string,
+  scrollRounds: number
 ): Promise<ProfileShortcodes> {
   const win = new BrowserWindow({
     show: false,
@@ -540,7 +567,20 @@ export async function recoverPartitionSession(): Promise<{
  * 该指纹返回空壳页（表现为 "user xxx not found"），而浏览器上下文正常。
  * 这里从渲染后的页面读 og 元数据与内联 JSON，作为资料解析的兜底路径。
  */
-export async function fetchProfileInBrowser(username: string): Promise<{
+export function fetchProfileInBrowser(username: string): Promise<{
+  user_id: string
+  username: string
+  full_name: string
+  avatar: string
+  followers: number
+  posts: number
+  is_private: boolean
+  is_verified: boolean
+} | null> {
+  return serialized(() => fetchProfileInBrowserImpl(username))
+}
+
+async function fetchProfileInBrowserImpl(username: string): Promise<{
   user_id: string
   username: string
   full_name: string
