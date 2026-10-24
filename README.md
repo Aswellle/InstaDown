@@ -9,7 +9,7 @@
 
 [![Release](https://img.shields.io/badge/Release-v0.3.1-rose?logo=github)](../../releases)
 [![Downloads](https://img.shields.io/github/downloads/Aswellle/InstaDown/total?label=Downloads&color=0d9488&logo=github)](../../releases)
-[![Tests](https://img.shields.io/badge/Tests-111%20passing-16a34a?logo=vitest)](#开发)
+[![Tests](https://img.shields.io/badge/Tests-130%20passing-16a34a?logo=vitest)](#开发)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?logo=electron)](#下载)
 [![License](https://img.shields.io/badge/License-MIT-8b5cf6)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)](#参与贡献)
@@ -156,7 +156,7 @@ npm run dist         # 打包发布版（win nsis / mac dmg / linux AppImage）
 
 要求：**Node ≥ 22、Python ≥ 3.11**（worker 零 pip 依赖）。环境变量 `INSTADOWN_PYTHON` 可指定解释器。
 
-测试覆盖：队列状态机、断点续传、URL 分类、多图回退、会话分级、selector 稳定性等 **111 个用例**（Vitest 64 + unittest 47）。
+测试覆盖：队列状态机、断点续传、URL 分类、多图回退、会话分级、selector 稳定性等 **130 个用例**（Vitest 83 + unittest 47）。
 
 ## 发布流程
 
