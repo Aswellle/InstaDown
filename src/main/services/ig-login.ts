@@ -312,9 +312,16 @@ export function openInstagramLogin(
 
     // 忽略证书/权限弹窗，保持流程顺畅
     loginWin.webContents.setWindowOpenHandler(({ url }) => {
-      // 站内跳转在本窗口继续，站外一律在登录窗口内导航（避免打开系统浏览器打断登录）
-      if (/instagram\.com/.test(url)) {
-        void loginWin.loadURL(url)
+      // 站内跳转在本窗口继续。必须按 hostname 判断而不是子串包含：
+      // /instagram\.com/.test() 会放行 "https://evil.com/?x=instagram.com"
+      // 与 "https://instagram.com.evil.com/"，把登录窗口导航到钓鱼页。
+      try {
+        const host = new URL(url).hostname.toLowerCase()
+        if (host === 'instagram.com' || host.endsWith('.instagram.com')) {
+          void loginWin.loadURL(url)
+        }
+      } catch {
+        /* 非法 URL 忽略 */
       }
       return { action: 'deny' }
     })
@@ -514,26 +521,29 @@ export async function restoreSessionToPartition(cookieString: string): Promise<b
   const ses = session.fromPartition(LOGIN_PARTITION)
   const expiry = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365
   let ok = 0
-  for (const { name, value } of pairs) {
-    for (const domain of ['.instagram.com', 'www.instagram.com']) {
-      try {
-        await ses.cookies.set({
-          url: 'https://www.instagram.com/',
-          name,
-          value,
-          domain,
-          path: '/',
-          secure: true,
-          httpOnly: false,
-          expirationDate: expiry
-        })
-        ok++
-        break
-      } catch {
-        /* 单个 cookie 失败不影响其余 */
+    for (const { name, value } of pairs) {
+      for (const domain of ['.instagram.com', 'www.instagram.com']) {
+        try {
+          await ses.cookies.set({
+            url: 'https://www.instagram.com/',
+            name,
+            value,
+            domain,
+            path: '/',
+            secure: true,
+            // sessionid 是凭据本体：恢复时保持 httpOnly，页面脚本不可读
+            // （IG 原生下发的该 cookie 即为 httpOnly）。csrftoken 等
+            // IG 前端自身需要 JS 读取的 cookie 保持可读，避免破坏页面。
+            httpOnly: name === 'sessionid',
+            expirationDate: expiry
+          })
+          ok++
+          break
+        } catch {
+          /* 单个 cookie 失败不影响其余 */
+        }
       }
     }
-  }
   // 写盘，确保重启后仍在
   await ses.cookies.flushStore().catch(() => {})
   return ok > 0

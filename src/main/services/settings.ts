@@ -85,7 +85,8 @@ export class SettingsService {
       if (!existsSync(this.cookieFile)) return null
       const buf = readFileSync(this.cookieFile)
       if (safeStorage.isEncryptionAvailable()) return safeStorage.decryptString(buf)
-      return buf.toString('utf8')
+      // 加密不可用却存在 session.bin：是历史遗留的明文文件，按无会话处理
+      return null
     } catch {
       return null
     }
@@ -98,10 +99,14 @@ export class SettingsService {
       }
       return
     }
-    const data = safeStorage.isEncryptionAvailable()
-      ? safeStorage.encryptString(value)
-      : Buffer.from(value, 'utf8')
-    writeFileSync(this.cookieFile, data)
+    // docs/11：不允许明文凭据落盘。系统密钥库不可用（如 Linux 无
+    // libsecret）时拒绝持久化 —— 会话仅保留在本次运行的内存中，
+    // 而不是以默认文件权限明文写盘。
+    if (!safeStorage.isEncryptionAvailable()) {
+      console.warn('[settings] safeStorage unavailable; session kept in memory only')
+      return
+    }
+    writeFileSync(this.cookieFile, safeStorage.encryptString(value))
   }
 }
 
