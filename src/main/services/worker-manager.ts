@@ -154,8 +154,20 @@ export class WorkerManager extends EventEmitter {
       }
     })
 
-    await this.call('handshake', undefined, HANDSHAKE_TIMEOUT)
-    if (this.sessionCookie) await this.call('set_session', { cookie: this.sessionCookie })
+    // 握手/会话同步失败必须清理刚拉起的进程：留着它不仅泄漏，
+    // 其 exit 回调稍后还会把 this.proc 置空、践踏下一次 start() 的状态。
+    try {
+      await this.call('handshake', undefined, HANDSHAKE_TIMEOUT)
+      if (this.sessionCookie) {
+        // worker 已活但 set_session 失败不应连带杀进程：仅跳过
+        await this.call('set_session', { cookie: this.sessionCookie }).catch(() => {})
+      }
+    } catch (e) {
+      if (this.proc === proc) this.proc = null
+      this.started = false
+      proc.kill()
+      throw e
+    }
     this.started = true
     this.restarts = 0
     this.emit('ready')
