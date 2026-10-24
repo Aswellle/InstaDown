@@ -421,7 +421,8 @@ export const zhCN = {
   download: {
     queued: '已加入下载队列：{n} 项',
     queueFailed: '加入队列失败',
-    workerDown: '解析服务异常，正在重启…'
+    workerDown: '解析服务异常，正在重启…',
+    workerReviveBanner: '解析服务不可用，帖子/主页解析暂受影响；下载中的任务不受影响，可点击重试恢复',
   },
 
   // ── 拖拽 ──

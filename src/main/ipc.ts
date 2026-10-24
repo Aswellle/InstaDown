@@ -419,6 +419,12 @@ export function registerIpc(deps: IpcDeps): void {
     if (url) await shell.openExternal(url)
   })
 
+  // 解析服务手动复活（崩溃重启预算耗尽后的恢复入口）
+  handle('worker:revive', async () => {
+    await worker.revive()
+    return worker.ready
+  })
+
   // ------------------------------------------------- 原生窗口 / 主题同步
   // Windows 的窗口控制按钮（最小化/最大化/关闭）区由原生绘制，需按当前主题
   // 更新 titleBarOverlay 颜色与窗口底色。

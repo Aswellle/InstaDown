@@ -109,6 +109,12 @@ export class WorkerManager extends EventEmitter {
     return this.starting
   }
 
+  /** 用户触发的手动复活：重置退避预算后重新拉起（重试耗尽后的恢复入口） */
+  revive(): Promise<void> {
+    this.restarts = 0
+    return this.start()
+  }
+
   private async doStart(): Promise<void> {
     if (!this.command) this.command = await findPython()
     const [cmd, ...baseArgs] = this.command.split(' ')

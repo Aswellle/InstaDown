@@ -71,7 +71,9 @@ const api = {
     const listener = (_e: Electron.IpcRendererEvent, status: 'ready' | 'down') => cb(status)
     ipcRenderer.on('worker:status', listener)
     return () => ipcRenderer.removeListener('worker:status', listener)
-  }
+  },
+  /** 解析服务崩溃重启耗尽后手动复活（返回复活后是否就绪） */
+  reviveWorker: () => ipcRenderer.invoke('worker:revive')
 }
 
 contextBridge.exposeInMainWorld('instadown', api)

@@ -93,6 +93,8 @@ declare global {
       openExternal(url: string): Promise<void>
       onTaskEvent(cb: (ev: TaskEventMsg) => void): () => void
       onWorkerStatus(cb: (status: 'ready' | 'down') => void): () => void
+      /** 解析服务崩溃重启耗尽后手动复活（返回复活后是否就绪） */
+      reviveWorker(): Promise<boolean>
     }
   }
 }

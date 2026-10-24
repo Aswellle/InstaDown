@@ -404,7 +404,8 @@ export const en = {
   download: {
     queued: 'Added to download queue: {n} items',
     queueFailed: 'Failed to enqueue',
-    workerDown: 'Parser error, restarting…'
+    workerDown: 'Parser error, restarting…',
+    workerReviveBanner: 'Parser service unavailable — post/profile parsing is offline. Active downloads are unaffected; retry to bring it back',
   },
 
   drag: {

@@ -45,6 +45,8 @@ export default function App() {
   const applyEvent = useTaskStore((s) => s.applyEvent)
   const loadSettings = useSettingsStore((s) => s.load)
   const setWorkerReady = useSettingsStore((s) => s.setWorkerReady)
+  const setWorkerDown = useSettingsStore((s) => s.setWorkerDown)
+  const workerDown = useSettingsStore((s) => s.workerDown)
   const refreshIgAccount = useIgAccountStore((s) => s.refresh)
   const setIgLoggedIn = useIgAccountStore((s) => s.setLoggedIn)
 
@@ -147,6 +149,7 @@ export default function App() {
     const offTask = window.instadown.onTaskEvent(applyEvent)
     const offWorker = window.instadown.onWorkerStatus((status) => {
       setWorkerReady(status === 'ready')
+      setWorkerDown(status === 'down')
       if (status === 'down') toast.error(i18nT('download.workerDown'))
     })
     return () => {
@@ -155,7 +158,7 @@ export default function App() {
     }
     // t 不进依赖：worker 状态事件不因语言切换重订阅（文案在下次触发时取最新值）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadTasks, loadSettings, applyEvent, setWorkerReady])
+  }, [loadTasks, loadSettings, applyEvent, setWorkerReady, setWorkerDown])
 
   const items = currentItems(view)
 
@@ -469,6 +472,25 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* 解析服务降级横幅：重启预算耗尽后的持久可见状态 + 手动复活入口。
+          下载走独立的网络传输，不受影响 —— 必须说清楚，避免用户误以为全停。 */}
+      {workerDown && (
+        <div className="flex shrink-0 items-center gap-2 border-b border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span className="min-w-0 flex-1">{t('download.workerReviveBanner')}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 shrink-0 px-2 text-xs"
+            onClick={() => {
+              void window.instadown.reviveWorker().catch(() => {})
+            }}
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> {t('common.retry')}
+          </Button>
+        </div>
+      )}
 
       <div className="relative flex min-h-0 flex-1">
         <HistoryPanel
