@@ -37,7 +37,6 @@ export class TaskManager {
   private waiting: string[] = []
   private active = new Set<string>()
   private controllers = new Map<string, { c: AbortController; reason: AbortReason }>()
-  private attempts = new Map<string, number>()
   private byteMarks = new Map<string, { t: number; b: number }>()
   private speedEma = new Map<string, number>()
   private _concurrency = 3
@@ -110,7 +109,6 @@ export class TaskManager {
       }
       this.repos.insertTask(row)
       this.rows.set(row.id, row)
-      this.attempts.set(row.id, 0)
       this.waiting.push(row.id)
       created.push(row)
       this.emit({ kind: 'created', id: row.id, status: 'WAITING', destPath: row.dest_path ?? undefined })
@@ -169,7 +167,6 @@ export class TaskManager {
   retry(id: string): void {
     const row = this.rows.get(id)
     if (!row || !['FAILED', 'CANCELED', 'PAUSED'].includes(row.status)) return
-    this.attempts.set(id, 0)
     row.status = 'WAITING'
     row.error = null
     row.progress = 0
