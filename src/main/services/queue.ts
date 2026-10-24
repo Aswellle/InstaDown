@@ -63,7 +63,9 @@ export class TaskManager {
     this.pump()
   }
 
-  /** 启动恢复：未完成任务装载进队列（WAITING 自动开始，PAUSED 保持） */
+  /** 启动恢复：未完成任务装载进队列（WAITING 自动开始，PAUSED 保持）；
+   *  最近的 FAILED/CANCELED 也装入内存（不自动开始），保证任务面板
+   *  可见且可重试 —— 此前它们跨重启后从面板消失且 retry 静默无效。 */
   restore(): void {
     this.repos.resetDownloadingToWaiting()
     for (const row of this.repos.listResumable()) {
@@ -72,7 +74,10 @@ export class TaskManager {
       this.repos.updateTask(row.id, { status: 'WAITING', speed: 0, error: null })
       row.status = 'WAITING'
       this.waiting.push(row.id)
-      this.emit({ kind: 'status', id: row.id, status: 'WAITING' })
+      this.emit({ kind: 'created', id: row.id, status: 'WAITING', destPath: row.dest_path ?? undefined })
+    }
+    for (const row of this.repos.listRecentFailed(20)) {
+      if (!this.rows.has(row.id)) this.rows.set(row.id, row)
     }
     this.pump()
   }
@@ -165,8 +170,11 @@ export class TaskManager {
   }
 
   retry(id: string): void {
-    const row = this.rows.get(id)
+    // DB-only 行也允许重试：restore 装载的失败任务之外，仍可能有更早的
+    // 历史失败行（超过 listRecentFailed 条数）
+    const row = this.rows.get(id) ?? this.repos.getTask(id)
     if (!row || !['FAILED', 'CANCELED', 'PAUSED'].includes(row.status)) return
+    if (!this.rows.has(id)) this.rows.set(id, row)
     row.status = 'WAITING'
     row.error = null
     row.progress = 0

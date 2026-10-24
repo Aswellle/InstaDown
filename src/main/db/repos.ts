@@ -143,6 +143,16 @@ export class Repos {
       .all() as unknown as TaskRow[]
   }
 
+  /** 最近的失败/取消任务：restore 时装入内存（不自动开始），
+   *  让任务面板可见、可重试 —— 否则它们跨重启永久消失 */
+  listRecentFailed(limit = 20): TaskRow[] {
+    return this.db
+      .prepare(
+        `SELECT * FROM tasks WHERE status IN ('FAILED','CANCELED') ORDER BY updated_at DESC LIMIT ?`
+      )
+      .all(limit) as unknown as TaskRow[]
+  }
+
   resetDownloadingToWaiting(): void {
     this.db
       .prepare(`UPDATE tasks SET status = 'WAITING', speed = 0 WHERE status = 'DOWNLOADING'`)

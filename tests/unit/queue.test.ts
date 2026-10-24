@@ -173,6 +173,67 @@ describe('TaskManager 状态机', () => {
     await waitFor(() => tm.get('t-old')!.status === 'SUCCESS')
     expect(existsSync(join(dir, 'restored.mp4'))).toBe(true)
   })
+
+  it('restore 装载最近失败任务，且跨重启后可重试', async () => {
+    const db3 = openDatabase(':memory:')
+    const repos3 = new Repos(db3)
+    const failedRow = {
+      id: 't-failed',
+      media_id: 'm2',
+      url: 'https://cdn/x',
+      author: 'a',
+      type: 'image' as const,
+      shortcode: 's',
+      index_no: 1,
+      status: 'FAILED' as const,
+      progress: 0,
+      speed: 0,
+      downloaded: 0,
+      total: 0,
+      dest_path: join(dir, 'failed.jpg'),
+      error: 'HTTP 500',
+      created_at: 1,
+      updated_at: 2
+    }
+    repos3.insertTask(failedRow)
+    const tm = new TaskManager(repos3, autoTransport)
+    tm.restore()
+    // 装载后可见、保持 FAILED、不自动开始
+    expect(tm.snapshot().map((t) => t.id)).toContain('t-failed')
+    expect(tm.get('t-failed')!.status).toBe('FAILED')
+    // 重试后完成（此前：不在内存 Map → retry 静默 no-op）
+    tm.retry('t-failed')
+    await waitFor(() => tm.get('t-failed')!.status === 'SUCCESS')
+    expect(existsSync(join(dir, 'failed.jpg'))).toBe(true)
+  })
+
+  it('retry 对 DB-only 的失败行同样生效', async () => {
+    const db4 = openDatabase(':memory:')
+    const repos4 = new Repos(db4)
+    repos4.insertTask({
+      id: 't-db-only',
+      media_id: 'm3',
+      url: 'https://cdn/x',
+      author: 'a',
+      type: 'image' as const,
+      shortcode: 's',
+      index_no: 1,
+      status: 'FAILED' as const,
+      progress: 0,
+      speed: 0,
+      downloaded: 0,
+      total: 0,
+      dest_path: join(dir, 'dbonly.jpg'),
+      error: 'HTTP 500',
+      created_at: 1,
+      updated_at: 2
+    })
+    const tm = new TaskManager(repos4, autoTransport)
+    // 注意：不调用 restore —— 模拟内存 Map 不含该行的场景
+    tm.retry('t-db-only')
+    await waitFor(() => tm.get('t-db-only')!.status === 'SUCCESS')
+    expect(existsSync(join(dir, 'dbonly.jpg'))).toBe(true)
+  })
 })
 
 describe('Repos CRUD', () => {
