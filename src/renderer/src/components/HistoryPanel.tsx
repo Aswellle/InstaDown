@@ -4,7 +4,6 @@ import {
   X,
   Trash2,
   FolderOpen,
-  RotateCcw,
   Copy,
   ExternalLink,
   History as HistoryIcon,
@@ -108,10 +107,6 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
     }
   }, [t])
 
-  const handleReDownload = useCallback(() => {
-    toast.info(t('history.redownloadHint'))
-  }, [t])
-
   const handleClearHistory = useCallback(async () => {
     try {
       await window.instadown.clearHistory()
@@ -189,7 +184,6 @@ export function HistoryPanel({ open, onClose, onOpenViewer }: HistoryPanelProps)
                       onReveal={handleReveal}
                       onOpenExternal={handleOpenExternal}
                       onCopy={handleCopyPath}
-                      onReDownload={handleReDownload}
                     />
                   ))}
                 </div>
@@ -217,15 +211,13 @@ function HistoryItem({
   onOpen,
   onReveal,
   onOpenExternal,
-  onCopy,
-  onReDownload
+  onCopy
 }: {
   row: HistoryRow
   onOpen: (row: HistoryRow) => void
   onReveal: (path: string) => void
   onOpenExternal: (path: string) => void
   onCopy: (path: string) => void
-  onReDownload: () => void
 }) {
   const { t } = useI18n()
   const inApp = canViewInApp(row.path)
@@ -270,13 +262,6 @@ function HistoryItem({
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
         )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onReDownload() }}
-          className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
-          title={t("history.redownload")}
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </button>
         <button
           onClick={(e) => { e.stopPropagation(); onCopy(row.path) }}
           className="rounded p-1 text-muted hover:bg-surface-hover hover:text-app"
