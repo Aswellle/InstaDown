@@ -11,13 +11,15 @@ import type {
   AppSettings,
   Locale
 } from '@shared/types'
-import type { Repos, TaskRow, MediaRow } from './db/repos'
+import type { Repos, TaskRow } from './db/repos'
 import type { WorkerManager } from './services/worker-manager'
 import type { SettingsService } from './services/settings'
 import type { TaskManager, EnqueueItem } from './services/queue'
 import { planPath, extFromUrl } from './services/files'
 import { toIpcHandler } from './ipc-helpers'
 import { setUiLocale, uiLocale } from './services/ui-locale'
+import { mediaRowsFromItems } from './services/media-rows'
+import { ProfileArchive } from './services/profile-archive'
 import {
   openInstagramLogin,
   clearInstagramLoginSession,
@@ -73,93 +75,18 @@ function rowToSnapshot(t: TaskRow) {
   }
 }
 
-function mediaRowsFromItems(
-  items: MediaCollection['items'],
-  meta: { author: string; shortcode: string }
-): MediaRow[] {
-  const now = Date.now()
-  return items.map((m) => ({
-    id: m.id,
-    platform: 'instagram',
-    shortcode: meta.shortcode,
-    author: meta.author,
-    url: m.url,
-    thumb_url: m.thumb_url ?? null,
-    type: m.type,
-    width: m.width ?? null,
-    height: m.height ?? null,
-    duration: m.duration ?? null,
-    caption: null,
-    taken_at: m.taken_at ?? null,
-    created_at: now
-  }))
-}
-
 export function registerIpc(deps: IpcDeps): void {
   const { win, worker, repos, settings, tasks } = deps
 
-  /** 主页归档回退路径：从已登录浏览器渲染出的主页提取 shortcode，
-   *  再逐个走公开 embed 解析拿原始媒体（IG 已对网页端关闭 feed 端点）。
-   *  返回 null 表示不可用（未登录 / 提取失败），调用方回退到原错误。 */
-  async function profileMediaViaDom(
-    username: string,
-    cursor?: string
-  ): Promise<{ user: ProfileUser; items: MediaCollection['items']; nextCursor: string | null } | null> {
-    const { listProfileShortcodes } = await import('./services/ig-login')
-    // cursor 复用为"已加载页数"（每页 10 帖）。IG 首屏约 12 帖，
-    // 每滚动一轮再加载约 12 帖，因此滚动轮数取 page*2 保证足够深。
-    const page = Math.max(0, parseInt(cursor ?? '0', 10) || 0)
-    const listed = await listProfileShortcodes(username, page * 2)
-    if (!listed.ok || listed.shortcodes.length === 0) return null
-
-    const perPage = 10
-    const slice = listed.shortcodes.slice(page * perPage, page * perPage + perPage)
-    if (slice.length === 0) return null
-
-    // 用户资料：优先 worker（Python 公开页面），失败或字段为空时回退到
-    // 已登录浏览器（IG 会对 Python 指纹返回空壳页，浏览器路径更稳）。
-    let user: ProfileUser
-    try {
-      const u = await worker.call<{ user: ProfileUser }>('get_user', { username })
-      user = u.user
-    } catch {
-      user = {
-        user_id: '',
-        username,
-        full_name: '',
-        avatar: '',
-        followers: 0,
-        posts: listed.shortcodes.length,
-        is_private: false,
-        is_verified: false
-      }
+  /** 主页归档服务：延迟装配（ig-login 仅在 Electron 运行时可用，且保持
+   *  动态 import 规避与主入口的循环依赖）；逻辑与测试都在 service 层。 */
+  let archive: ProfileArchive | null = null
+  const getProfileArchive = async (): Promise<ProfileArchive> => {
+    if (!archive) {
+      const dom = await import('./services/ig-login')
+      archive = new ProfileArchive(worker, repos, dom)
     }
-    if (!user.full_name && !user.avatar) {
-      const { fetchProfileInBrowser } = await import('./services/ig-login')
-      const browserUser = await fetchProfileInBrowser(username).catch(() => null)
-      if (browserUser) {
-        user = { ...user, ...browserUser, posts: user.posts || browserUser.posts }
-      }
-    }
-
-    // 逐个解析（公开 embed 路径）。worker 是单进程串行 + 内置 1.5s 限流，
-    // 并发发起不会更快，因此按序请求；单帖失败不影响整页。
-    const items: MediaCollection['items'] = []
-    for (const shortcode of slice) {
-      try {
-        const r = await worker.call<MediaCollection>('resolve_post', { shortcode })
-        for (const m of r.items) items.push(m)
-        for (const row of mediaRowsFromItems(r.items, { author: username, shortcode })) {
-          repos.upsertMedia(row)
-        }
-      } catch {
-        /* 单帖失败跳过 */
-      }
-    }
-    if (items.length === 0) return null
-
-    const hasMore = listed.shortcodes.length > (page + 1) * perPage
-    return { user, items, nextCursor: hasMore ? String(page + 1) : null }
+    return archive
   }
 
   // 任务事件 → 渲染进程（progress 200ms 节流）
@@ -262,8 +189,19 @@ export function registerIpc(deps: IpcDeps): void {
     } catch (e) {
       // IG 已对网页端关闭 feed 端点（实测返回 HTML 壳页）。回退：从已登录
       // 浏览器渲染出的主页提取 shortcode，再逐个走公开 embed 解析拿原始媒体。
-      const fallback = await profileMediaViaDom(username, maxId).catch(() => null)
-      if (fallback) return fallback
+      const archive = await getProfileArchive()
+      const fallback = await archive.getProfileMedia(username, maxId).catch(() => null)
+      if (fallback?.ok) return fallback
+      // DOM 路径的结构化失败原因 → 可操作错误码；其余保留原始 worker 错误
+      const reason = fallback && !fallback.ok ? fallback.reason : null
+      if (reason === 'not-logged-in') {
+        return { error: { code: 'E_IG_LOGIN_REQUIRED', message: 'login required' } as AppError }
+      }
+      if (reason === 'not-found') {
+        return {
+          error: { code: 'E_IG_NOT_FOUND', message: `user ${username} not found` } as AppError
+        }
+      }
       return { error: toAppError(e) }
     }
   })
