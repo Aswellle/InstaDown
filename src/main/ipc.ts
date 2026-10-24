@@ -596,9 +596,4 @@ export function registerIpc(deps: IpcDeps): void {
     }
     return { persisted: settings.hasSession(), partition, profile }
   })
-  // 诊断：返回登录页探针原始结果（供 CDP 冒烟测试确认登录判定依据）
-  handle('ig:probeLoginPage', async () => {
-    const { probeLoginPageForDiag } = await import('./services/ig-login')
-    return probeLoginPageForDiag()
-  })
 }

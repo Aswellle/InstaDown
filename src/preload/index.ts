@@ -36,8 +36,6 @@ const api = {
   igResetAndLogin: () => ipcRenderer.invoke('ig:resetAndLogin'),
   igLogout: () => ipcRenderer.invoke('ig:logout'),
   igLoginStatus: () => ipcRenderer.invoke('ig:loginStatus'),
-  // 诊断（临时）：返回登录页探针原始结果，供 CDP 冒烟测试
-  igProbeLoginPage: () => ipcRenderer.invoke('ig:probeLoginPage'),
 
   // 原生窗口外观（Windows 窗口控制按钮区随主题）。
   // 传原始 ThemeMode（含 'system'）而非已解析的 light/dark：主进程据此设置

@@ -329,42 +329,6 @@ export function openInstagramLogin(
 }
 
 /**
- * 诊断：打开隐藏窗口加载 IG 首页，返回探针原始结果与判定。
- * 用于确认登录判定依据是否符合当前页面结构（临时用途）。
- */
-export async function probeLoginPageForDiag(): Promise<unknown> {
-  const win = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      partition: LOGIN_PARTITION,
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
-  try {
-    await win.loadURL('https://www.instagram.com/')
-    await new Promise((r) => setTimeout(r, 5000))
-    const p = await probePage(win.webContents)
-    const cookie = await readIgCookies(LOGIN_PARTITION)
-    return {
-      probe: p,
-      authenticated: p ? isAuthenticated(p) : null,
-      cookieNames: cookie
-        .split('; ')
-        .map((kv) => kv.split('=')[0])
-        .filter(Boolean),
-      hasSessionCookie: cookie.split('; ').some((kv) => kv.startsWith(`${SESSION_COOKIE}=`)),
-      url: win.webContents.getURL()
-    }
-  } catch (e) {
-    return { error: String(e).slice(0, 200) }
-  } finally {
-    if (!win.isDestroyed()) win.close()
-  }
-}
-
-/**
  * 用 ds_user_id 反查用户名（安全挑战页没有 profile 链接时用）。
  * 走公开的 web_profile 页面（worker 同一路径），不需要私有接口。
  */
@@ -570,46 +534,6 @@ export async function recoverPartitionSession(): Promise<{
 }
 
 /**
- * 在**浏览器上下文内**验证会话是否真正有效。
- *
- * 为什么需要这个：Instagram 会把会话绑定到客户端 TLS 指纹（JA3/JA4）等信号。
- * Python（urllib）与 Electron 浏览器上下文的指纹不同，因此「Python 请求失败」
- * 不能证明会话无效。只有在页面上下文里发起的请求才反映真实登录状态。
- */
-export async function verifySessionInBrowser(): Promise<{
-  valid: boolean
-  username?: string
-  reason?: string
-}> {
-  const ses = session.fromPartition(LOGIN_PARTITION)
-  return new Promise((resolve) => {
-    const win = new BrowserWindow({
-      show: false,
-      webPreferences: { partition: LOGIN_PARTITION, sandbox: true, contextIsolation: true }
-    })
-    const done = (r: { valid: boolean; username?: string; reason?: string }) => {
-      if (!win.isDestroyed()) win.close()
-      resolve(r)
-    }
-    win.webContents
-      .executeJavaScript(
-        `fetch('https://www.instagram.com/api/v1/accounts/current_user/', {
-           headers: { 'x-ig-app-id': '936619743392459', 'x-requested-with': 'XMLHttpRequest' }
-         })
-         .then(r => r.text())
-         .then(t => { try { const d = JSON.parse(t); return { valid: !!d.user, username: d.user && d.user.username } }
-                      catch { return { valid: false, reason: 'html-response' } } })
-         .catch(e => ({ valid: false, reason: String(e).slice(0, 60) }))`,
-        true
-      )
-      .then((r) => done(r as { valid: boolean; username?: string; reason?: string }))
-      .catch((e) => done({ valid: false, reason: String(e).slice(0, 60) }))
-    void win.loadURL('https://www.instagram.com/')
-    setTimeout(() => done({ valid: false, reason: 'timeout' }), 20000)
-  })
-}
-
-/**
  * 在已登录浏览器里读取用户公开资料（DOM 兜底）。
  *
  * 为什么需要：worker 的 `get_user` 走 Python + 爬虫 UA 抓页面，IG 会对
@@ -707,13 +631,6 @@ export async function fetchProfileInBrowser(username: string): Promise<{
   } finally {
     if (!win.isDestroyed()) win.close()
   }
-}
-
-/** 供 worker 使用：会话是否应在 Python 侧生效（探测一次） */
-export async function probePythonSideSession(): Promise<boolean> {
-  const cookie = await readIgCookies(LOGIN_PARTITION)
-  if (!cookie.includes(`${SESSION_COOKIE}=`)) return false
-  return true
 }
 
 export { LOGIN_PARTITION }
