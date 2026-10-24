@@ -93,12 +93,6 @@ export interface AppSettings {
   concurrency: number
   autoClipboard: boolean
   theme: ThemeMode
-  /**
-   * 无登录优先（默认开启，强烈建议保持）：公开内容一律匿名获取，
-   * 用户的 IG 账号完全不进入请求路径，最大限度避免账号风控。
-   * 关闭后（不推荐）公开端点也会携带会话，仅供特殊排查使用。
-   */
-  anonymousFirst: boolean
   /** 经由账号的功能（Stories 等）执行前显式提醒账号风险 */
   warnAccountUse: boolean
   /** 自动把浏览过的图片缓存到本地（防 CDN 链接过期后图片失效） */

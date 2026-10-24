@@ -318,7 +318,7 @@ export const zhCN = {
     autoClipboardHint: '窗口聚焦时检测剪贴板中的 IG 链接并提示',
     privacy: '隐私与账号安全',
     privacyDesc: '控制何时使用你的 IG 会话',
-    anonymousFirst: '匿名优先',
+    anonymousFirstAlways: '内置策略，始终开启，不可关闭',
     warnAccountUse: '账号功能二次确认',
     account: 'Instagram 账号',
     login: '登录 Instagram',

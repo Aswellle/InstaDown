@@ -56,7 +56,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [dir, setDir] = useState('')
   const [concurrency, setConcurrency] = useState(3)
   const [autoClipboard, setAutoClipboard] = useState(true)
-  const [anonymousFirst, setAnonymousFirst] = useState(true)
   const [warnAccountUse, setWarnAccountUse] = useState(true)
   const [autoCacheImages, setAutoCacheImages] = useState(true)
   const [theme, setTheme] = useState<ThemeMode>('light')
@@ -75,7 +74,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     setDir(settings.downloadDir)
     setConcurrency(settings.concurrency)
     setAutoClipboard(settings.autoClipboard)
-    setAnonymousFirst(settings.anonymousFirst)
     setWarnAccountUse(settings.warnAccountUse)
     setAutoCacheImages(settings.autoCacheImages)
     setTheme(settings.theme)
@@ -275,18 +273,16 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
 
         {/* ───────────────────────── 账号安全 */}
         <Group icon={ShieldCheck} title={t("settings.privacy")} desc={t("settings.privacyDesc")}>
-          <Toggle
-            label={t("settings.anonymousFirstLong")}
-            hint={t("settings.anonymousFirstLongHint")}
-            checked={anonymousFirst}
-            tone="safe"
-            onChange={async () => {
-              const next = !anonymousFirst
-              setAnonymousFirst(next)
-              await save({ anonymousFirst: next })
-              flashSaved()
-            }}
-          />
+          {/* 无登录优先是 worker 内置的抓取策略（匿名优先阶梯），不可关闭。
+              作为固定说明展示，避免给出"可以关闭"的错误暗示。 */}
+          <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+            <div className="min-w-0">
+              <div className="text-xs font-medium text-app">{t("settings.anonymousFirstLong")}</div>
+              <div className="mt-0.5 text-[11px] leading-relaxed text-muted">{t("settings.anonymousFirstLongHint")}</div>
+              <div className="mt-0.5 text-[11px] text-subtle">{t("settings.anonymousFirstAlways")}</div>
+            </div>
+          </div>
           <Toggle
             label={t("settings.warnAccountUseLong")}
             hint={t("settings.warnAccountUseLongHint")}

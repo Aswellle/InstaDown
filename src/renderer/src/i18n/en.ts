@@ -301,7 +301,7 @@ export const en = {
     autoClipboardHint: 'Detect IG links in the clipboard when the window is focused and prompt',
     privacy: 'Privacy & account safety',
     privacyDesc: 'Control when your IG session is used',
-    anonymousFirst: 'Anonymous-first',
+    anonymousFirstAlways: 'Built-in policy — always on, cannot be disabled',
     warnAccountUse: 'Confirm account-backed actions',
     account: 'Instagram account',
     login: 'Log in to Instagram',

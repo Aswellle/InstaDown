@@ -11,7 +11,6 @@ const DEFAULTS: AppSettings = {
   concurrency: 3,
   autoClipboard: true,
   theme: 'light', // 默认浅色（用户可在设置中改为深色/跟随系统）
-  anonymousFirst: true, // 无登录优先：公开内容一律匿名获取（账号安全最高优先）
   warnAccountUse: true, // 经由账号的功能执行前提醒风险
   autoCacheImages: true // 自动缓存浏览过的图片，防 CDN 链接过期
 }
@@ -34,7 +33,6 @@ export class SettingsService {
       concurrency: clampInt(this.repos.getSetting('concurrency'), 1, 6, DEFAULTS.concurrency),
       autoClipboard: (this.repos.getSetting('autoClipboard') ?? 'true') === 'true',
       theme: theme === 'dark' || theme === 'system' || theme === 'light' ? theme : DEFAULTS.theme,
-      anonymousFirst: (this.repos.getSetting('anonymousFirst') ?? 'true') === 'true',
       warnAccountUse: (this.repos.getSetting('warnAccountUse') ?? 'true') === 'true',
       autoCacheImages: (this.repos.getSetting('autoCacheImages') ?? 'true') === 'true'
     }
@@ -47,8 +45,6 @@ export class SettingsService {
     if (patch.autoClipboard != null) this.repos.setSetting('autoClipboard', String(patch.autoClipboard))
     if (patch.theme === 'light' || patch.theme === 'dark' || patch.theme === 'system')
       this.repos.setSetting('theme', patch.theme)
-    if (patch.anonymousFirst != null)
-      this.repos.setSetting('anonymousFirst', String(patch.anonymousFirst))
     if (patch.warnAccountUse != null)
       this.repos.setSetting('warnAccountUse', String(patch.warnAccountUse))
     if (patch.autoCacheImages != null)
