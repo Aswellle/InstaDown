@@ -57,3 +57,18 @@ describe('extFromUrl', () => {
     expect(extFromUrl('https://cdn/no-ext', 'image')).toBe('jpg')
   })
 })
+
+describe('sanitizeFilename Windows 保留名', () => {
+  it('保留设备名加后缀规避（目录名场景）', () => {
+    expect(sanitizeFilename('con')).toBe('con_')
+    expect(sanitizeFilename('NUL')).toBe('NUL_')
+    expect(sanitizeFilename('com1')).toBe('com1_')
+    expect(sanitizeFilename('lpt9')).toBe('lpt9_')
+  })
+
+  it('普通名字与带扩展名形式不受影响', () => {
+    expect(sanitizeFilename('natgeo')).toBe('natgeo')
+    expect(sanitizeFilename('console')).toBe('console')
+    expect(sanitizeFilename('contact.jpg')).toBe('contact.jpg')
+  })
+})

@@ -6,9 +6,14 @@ import { join } from 'node:path'
 
 const ILLEGAL = /[<>:"/\\|?*\u0000-\u001f]/g
 
+/** Windows 保留设备名（CON/NUL/COM1-9/LPT1-9…）：作为目录名或去掉
+ *  扩展名的文件名时，大量 Win32 API 拒绝或行为异常。命中时加后缀规避。 */
+const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i
+
 export function sanitizeFilename(name: string): string {
   const cleaned = name.replace(ILLEGAL, '_').replace(/\s+/g, ' ').trim().replace(/^\.+/, '')
-  return (cleaned || 'file').slice(0, 120)
+  const safe = WINDOWS_RESERVED.test(cleaned) ? `${cleaned}_` : cleaned
+  return (safe || 'file').slice(0, 120)
 }
 
 export function ensureDir(dir: string): void {
