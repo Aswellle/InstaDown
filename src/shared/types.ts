@@ -1,4 +1,27 @@
-/** 主进程 / 渲染进程共享模型（docs/dev/02 §3、§4、§7） */
+/**
+ * 主进程 / 渲染进程共享模型（docs/dev/02 §3、§4、§7）。
+ *
+ * ── 跨进程 wire 契约对照表（与 worker/provider.py 的注释互为镜像）──
+ * 本文件是 IPC 边界（渲染层 ↔ 主进程）的唯一类型源；主进程 ↔ Python
+ * worker 的 stdio JSON-RPC 契约由 worker/provider.py 的归一化函数产出，
+ * 两边字段必须同步修改：
+ *
+ *   本文件 (TS)              worker/provider.py (Python)
+ *   ─────────────────────    ─────────────────────────────
+ *   MediaItem                _normalize_media / _media_node_to_item
+ *     .id                      "id"（注意：IG media_id 超 Number 安全整数，
+ *                              跨 worker 边界一律以字符串传输）
+ *     .url/.thumb_url          "url"/"thumb_url"（仅 http(s)，见 igclient 防线）
+ *     .taken_at                "taken_at"（秒级；DB 的 created_at 是毫秒）
+ *   ProfileUser              _normalize_user（avatar ← profile_pic_url[_hd]）
+ *   MediaCollection          resolve_post / resolve_story 返回值
+ *   错误码                    WorkerError.code；ipc.ts 的 WORKER_ERROR_TO_APP
+ *                            负责映射，worker 的 E_INTERNAL 在 TS 侧回落为
+ *                            E_NETWORK
+ * 主页媒体分页游标 nextCursor 由主进程 ProfileArchive 生成（"dom:<页>"），
+ * 不再来自 worker。wire 契约破坏性变更时同步 bump worker/main.py 的
+ * PROTOCOL_VERSION（主进程握手校验）。
+ */
 
 export interface MediaItem {
   id: string

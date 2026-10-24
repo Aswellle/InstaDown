@@ -83,6 +83,8 @@ interface Pending {
 
 const REQUEST_TIMEOUT = 120_000 // 主页媒体解析可能较慢
 const HANDSHAKE_TIMEOUT = 10_000
+/** 与 worker/main.py 的 PROTOCOL_VERSION 对应；不匹配即拒绝启动 */
+const EXPECTED_PROTOCOL = 2
 
 export class WorkerManager extends EventEmitter {
   private proc: ChildProcessWithoutNullStreams | null = null
@@ -163,7 +165,19 @@ export class WorkerManager extends EventEmitter {
     // 握手/会话同步失败必须清理刚拉起的进程：留着它不仅泄漏，
     // 其 exit 回调稍后还会把 this.proc 置空、践踏下一次 start() 的状态。
     try {
-      await this.call('handshake', undefined, HANDSHAKE_TIMEOUT)
+      const hs = await this.call<{ protocol: number; version: string }>(
+        'handshake',
+        undefined,
+        HANDSHAKE_TIMEOUT
+      )
+      // 版本漂移零检测曾是缺口：打包产物与 worker 不配套时静默运行，
+      // 直到某个字段对不上才以难排查的方式失败
+      if (hs.protocol !== EXPECTED_PROTOCOL) {
+        throw Object.assign(
+          new Error(`worker protocol mismatch: ${hs.protocol} (expected ${EXPECTED_PROTOCOL})`),
+          { code: 'E_WORKER_DOWN' }
+        )
+      }
       if (this.sessionCookie) {
         // worker 已活但 set_session 失败不应连带杀进程：仅跳过
         await this.call('set_session', { cookie: this.sessionCookie }).catch(() => {})

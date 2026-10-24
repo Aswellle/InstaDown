@@ -1,6 +1,17 @@
 """Instagram Provider —— 实现统一 Provider 协议（docs/05）：
 resolve(url) / searchUser(username) / getMedia() / download() 的解析与元数据部分。
 输出统一 MediaCollection：author / thumbnail / media type / resolution / metadata。
+
+── 跨进程 wire 契约对照表（与 src/shared/types.ts 的注释互为镜像）──
+本文件的归一化函数产出的 dict 经 worker/main.py 的 JSON-RPC 帧进入主进程，
+字段名与 TS 侧类型必须同步修改：
+  _normalize_media / _media_node_to_item → MediaItem（media_id 以字符串传输，
+    taken_at 为秒级时间戳，url 仅 http(s)）
+  _normalize_user                        → ProfileUser（avatar ← profile_pic_url[_hd]）
+  resolve_post / resolve_story 返回值     → MediaCollection
+  WorkerError.code                       → ipc.ts 的 WORKER_ERROR_TO_APP 错误码映射
+修改任一侧字段名前先改本表与 types.ts 中的对照表，并同步 bump
+worker/main.py 的 PROTOCOL_VERSION。
 """
 
 from __future__ import annotations

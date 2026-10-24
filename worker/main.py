@@ -18,7 +18,9 @@ from igclient import WorkerError  # noqa: E402
 from provider import InstagramProvider  # noqa: E402
 from urls import classify_url, media_id_to_shortcode, shortcode_to_media_id  # noqa: E402
 
-PROTOCOL_VERSION = 1
+# 协议版本：wire 契约（字段名/语义）发生破坏性变更时 bump，
+# 主进程 WorkerManager 握手时校验不匹配即拒绝启动。
+PROTOCOL_VERSION = 2
 WORKER_VERSION = "1.0.0"
 
 provider = InstagramProvider()

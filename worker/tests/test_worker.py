@@ -42,7 +42,7 @@ class TestWorkerProtocol(unittest.TestCase):
     def test_handshake(self):
         resp = self.rpc(0, "handshake")
         self.assertTrue(resp["ok"])
-        self.assertEqual(resp["result"]["protocol"], 1)
+        self.assertEqual(resp["result"]["protocol"], 2)
         self.assertEqual(resp["result"]["provider"], "instagram")
 
     def test_classify_url(self):

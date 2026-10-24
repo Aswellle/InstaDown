@@ -19,7 +19,7 @@ describe('Python Worker 协议（真实进程）', () => {
 
   it('握手', async () => {
     const r = await wm.call<{ protocol: number; provider: string }>('handshake')
-    expect(r.protocol).toBe(1)
+    expect(r.protocol).toBe(2)
     expect(r.provider).toBe('instagram')
   })
 
@@ -57,6 +57,6 @@ describe('Python Worker 协议（真实进程）', () => {
     ;(wm as unknown as { proc: { kill: () => void } }).proc?.kill()
     await new Promise((r) => setTimeout(r, 2500))
     const r = await wm.call<{ protocol: number }>('handshake')
-    expect(r.protocol).toBe(1)
+    expect(r.protocol).toBe(2)
   }, 20000)
 })
