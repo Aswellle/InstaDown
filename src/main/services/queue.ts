@@ -1,4 +1,4 @@
-import { createWriteStream, existsSync, statSync, renameSync } from 'node:fs'
+import { createWriteStream, existsSync, renameSync, rmSync, statSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { ensureDir } from './files'
 import { backoffDelay, type Transport } from './downloader'
@@ -249,8 +249,17 @@ export class TaskManager {
           row.speed = 0
           this.repos.updateTask(id, { status: 'PAUSED', speed: 0 })
           this.emit({ kind: 'status', id, status: 'PAUSED' })
+        } else if (row.dest_path) {
+          // cancel（含 remove）：本次下载已放弃，清掉半成品 .part，
+          // 不然磁盘上会积累永不复用的残留。pause 保留供续传、
+          // FAILED 保留供重试续传，不在清理之列。
+          try {
+            rmSync(`${row.dest_path}.part`, { force: true })
+          } catch {
+            /* 清理失败不影响状态流转 */
+          }
         }
-        // cancel 已在 cancel() 中处理
+        // cancel 的状态更新已在 cancel()/remove() 中完成
       } else {
         row.status = 'FAILED'
         row.speed = 0

@@ -174,6 +174,26 @@ describe('TaskManager 状态机', () => {
     expect(existsSync(join(dir, 'restored.mp4'))).toBe(true)
   })
 
+  it('取消下载清理半成品 .part 文件', async () => {
+    const gate: Array<() => void> = []
+    const transport: Transport = async (opts) => {
+      opts.onResponse?.({ status: 200, total: 200 })
+      opts.onData(Buffer.alloc(50, 1))
+      await new Promise<void>((r) => gate.push(r))
+      return { status: 200, total: 200 }
+    }
+    const tm = new TaskManager(repos, transport)
+    const [task] = tm.enqueue(items(dir, 1))
+    await waitFor(() => tm.get(task.id)!.status === 'DOWNLOADING')
+    const part = `${task.dest_path}.part`
+    await waitFor(() => existsSync(part))
+    tm.cancel(task.id)
+    gate.pop()?.()
+    await waitFor(() => tm.get(task.id)!.status === 'CANCELED')
+    // 状态在 cancel() 中同步置位，.part 清理在传输中止后的异步路径执行
+    await waitFor(() => !existsSync(part))
+  })
+
   it('restore 装载最近失败任务，且跨重启后可重试', async () => {
     const db3 = openDatabase(':memory:')
     const repos3 = new Repos(db3)
