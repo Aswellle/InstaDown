@@ -39,6 +39,8 @@ export class TaskManager {
   private controllers = new Map<string, { c: AbortController; reason: AbortReason }>()
   private byteMarks = new Map<string, { t: number; b: number }>()
   private speedEma = new Map<string, number>()
+  /** 进度落库节流标记（任务 id → 上次落库时间） */
+  private dbMarks = new Map<string, number>()
   private _concurrency = 3
 
   constructor(
@@ -272,6 +274,7 @@ export class TaskManager {
       this.controllers.delete(id)
       this.speedEma.delete(id)
       this.byteMarks.delete(id)
+      this.dbMarks.delete(id)
       this.pump()
     }
   }
@@ -411,12 +414,18 @@ export class TaskManager {
     row.progress = progress
     row.speed = speed
     if (total > 0) row.total = total
-    this.repos.updateTask(row.id, {
-      progress,
-      downloaded: absolute,
-      speed,
-      ...(total > 0 ? { total } : {})
-    })
+    // 进度落库按秒节流：断点续传以 .part 文件大小为准，DB 进度只服务
+    // 面板展示，无需与事件流同频；终态仍由 begin() 全量写入。
+    const nowDb = this.now()
+    if (nowDb - (this.dbMarks.get(row.id) ?? 0) >= 1000) {
+      this.dbMarks.set(row.id, nowDb)
+      this.repos.updateTask(row.id, {
+        progress,
+        downloaded: absolute,
+        speed,
+        ...(total > 0 ? { total } : {})
+      })
+    }
     this.emit({
       kind: 'progress',
       id: row.id,
