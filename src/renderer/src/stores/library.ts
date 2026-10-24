@@ -108,11 +108,13 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       const prev = get().view
       const keepItems = prev.mode === 'profile' ? prev.page.items : []
       if (keepItems.length > 0) {
-        // 追加失败：保留已加载内容并向上抛出提示
+        // 追加失败：保留已加载内容并向上抛出提示。
+        // cursor 必须原样保留 —— 置 null 会让"再加载"按钮消失，
+        // 一次瞬时网络错误就永久终止该主页的分页浏览。
         set({
           view: {
             mode: 'profile',
-            page: { ...(prev as { page: ProfilePage }).page, loadingMore: false, cursor: null }
+            page: { ...(prev as { page: ProfilePage }).page, loadingMore: false }
           }
         })
         // 只带错误码，文案由渲染层按当前语言解析（store 不该持有文案）
