@@ -170,31 +170,6 @@ class InstagramProvider:
             raise WorkerError("E_IG_PRIVATE", f"@{username} is a private account")
         return {"user": _normalize_user(user)}
 
-    def get_profile_media(self, username: str, max_id: str | None = None, limit: int = 12) -> dict:
-        user = self.client.web_profile(username)
-        if not user.get("id"):
-            # 无法获得 user_id 时，feed 端点必然失败；给出可操作提示
-            raise WorkerError(
-                "E_IG_LOGIN_REQUIRED",
-                "主页媒体列表需要 user_id（公开页面未提供），请在设置中提供会话 Cookie",
-            )
-        try:
-            feed = self.client.user_feed(user["id"], max_id=max_id, count=limit)
-        except WorkerError as e:
-            # IG 的用户 feed 端点对未登录请求返回 401/403
-            if e.code in ("E_IG_LOGIN_REQUIRED", "E_NETWORK") or "401" in e.message or "403" in e.message:
-                raise WorkerError(
-                    "E_IG_LOGIN_REQUIRED",
-                    "主页媒体列表需要登录：请在设置中粘贴 Instagram 会话 Cookie（仅存本机）",
-                )
-            raise
-        items = [m for m in (_normalize_media(x) for x in feed["items"]) if m]
-        return {
-            "user": _normalize_user(user),
-            "items": items,
-            "next_max_id": feed["next_max_id"],
-        }
-
     def resolve_story(self, username: str) -> dict:
         user = self.client.web_profile(username)
         data = self.client.story(user["id"])

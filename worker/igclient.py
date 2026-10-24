@@ -435,26 +435,6 @@ class IgClient:
             raise WorkerError("E_IG_NOT_FOUND", f"user {username} not found")
         return user
 
-    def user_feed(self, user_id: str, max_id: str | None = None, count: int = 12) -> dict:
-        params: dict = {"count": str(count)}
-        if max_id:
-            params["max_id"] = max_id
-        q = urllib.parse.urlencode(params)
-        url = f"https://www.instagram.com/api/v1/feed/user/{user_id}/?{q}"
-        # 该端点已对网页端关闭（返回 HTML 壳），常规路径由主进程的 DOM 回退
-        # 接管；这里保持匿名优先，仅当匿名被明确要求登录时才动用会话。
-        try:
-            data = self.get_json(url)
-        except WorkerError as e:
-            if e.code == "E_IG_LOGIN_REQUIRED" and self.session_cookie:
-                data = self.get_json(url, with_session=True)
-            else:
-                raise
-        return {
-            "items": data.get("items") or [],
-            "next_max_id": data.get("next_max_id"),
-        }
-
     def story(self, user_id: str) -> dict:
         # Stories 只能经由登录账号查看（IG 官方机制），是少数**必须**用会话
         # 的端点 —— with_session=True 是显式声明的必要暴露。

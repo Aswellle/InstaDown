@@ -50,12 +50,6 @@ def handle(method: str, params: dict):
         return provider.resolve_post(params["shortcode"])
     if method == "get_user":
         return provider.get_user(params["username"])
-    if method == "get_profile_media":
-        return provider.get_profile_media(
-            params["username"],
-            max_id=params.get("max_id"),
-            limit=int(params.get("limit") or 12),
-        )
     if method == "resolve_story":
         return provider.resolve_story(params["username"])
     if method == "shortcode_to_media_id":

@@ -176,32 +176,22 @@ export function registerIpc(deps: IpcDeps): void {
   })
 
   handle('user:media', async (username: string, maxId?: string) => {
+    // IG 已对网页端关闭 feed 端点（实测返回 HTML 壳页），worker 路径每页
+    // 都要白付一轮限流重试才落到这里 —— 直接走 DOM 归档路径。
+    const archive = await getProfileArchive()
     try {
-      const r = await worker.call<{
-        user: ProfileUser
-        items: MediaCollection['items']
-        next_max_id?: string | null
-      }>('get_profile_media', { username, max_id: maxId })
-      for (const row of mediaRowsFromItems(r.items, { author: username, shortcode: '' })) {
-        repos.upsertMedia(row)
-      }
-      return { user: r.user, items: r.items, nextCursor: r.next_max_id ?? null }
+      const r = await archive.getProfileMedia(username, maxId)
+      if (r.ok) return r
+      const code: AppError['code'] =
+        r.reason === 'not-logged-in' ? 'E_IG_LOGIN_REQUIRED'
+        : r.reason === 'not-found' ? 'E_IG_NOT_FOUND'
+        : 'E_NETWORK'
+      const message =
+        r.reason === 'not-logged-in' ? 'login required'
+        : r.reason === 'not-found' ? `user ${username} not found`
+        : 'profile media unavailable'
+      return { error: { code, message } as AppError }
     } catch (e) {
-      // IG 已对网页端关闭 feed 端点（实测返回 HTML 壳页）。回退：从已登录
-      // 浏览器渲染出的主页提取 shortcode，再逐个走公开 embed 解析拿原始媒体。
-      const archive = await getProfileArchive()
-      const fallback = await archive.getProfileMedia(username, maxId).catch(() => null)
-      if (fallback?.ok) return fallback
-      // DOM 路径的结构化失败原因 → 可操作错误码；其余保留原始 worker 错误
-      const reason = fallback && !fallback.ok ? fallback.reason : null
-      if (reason === 'not-logged-in') {
-        return { error: { code: 'E_IG_LOGIN_REQUIRED', message: 'login required' } as AppError }
-      }
-      if (reason === 'not-found') {
-        return {
-          error: { code: 'E_IG_NOT_FOUND', message: `user ${username} not found` } as AppError
-        }
-      }
       return { error: toAppError(e) }
     }
   })
