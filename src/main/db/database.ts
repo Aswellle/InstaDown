@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_media_author ON media(author, taken_at DESC);
+CREATE INDEX IF NOT EXISTS idx_history_media ON history(media_id, created_at DESC);
 `
 
 export function openDatabase(dbPath: string): DB {
