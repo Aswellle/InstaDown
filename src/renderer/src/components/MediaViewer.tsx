@@ -97,7 +97,7 @@ export function MediaViewer({
               <button
                 onClick={goNext}
                 title={t("viewer.nextKey")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white/90 opacity-0 transition-opacity hover:bg-black/70 [div:hover>&]:opacity-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white/90 opacity-0 transition-opacity hover:bg-black/70 focus:opacity-100 [div:hover>&]:opacity-100"
               >
                 ›
               </button>

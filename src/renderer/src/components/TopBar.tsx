@@ -138,6 +138,7 @@ export function TopBar({
               if (e.key === 'Enter') submit()
             }}
             placeholder={t('topBar.placeholder')}
+            aria-label={t('topBar.placeholder')}
             className="h-9 w-full rounded-lg border border-app bg-surface pl-9 pr-20 text-sm text-app placeholder:text-subtle focus-visible:border-rose-500/60 focus-visible:outline-none"
             spellCheck={false}
           />

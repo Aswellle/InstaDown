@@ -616,21 +616,28 @@ export default function App() {
 
             {view.mode === 'profile' && (
               <div>
-                <ProfileHeader user={view.page.user} loadedCount={view.page.items.length} />
-                {view.page.items.length > 0 ? (
-                  <MediaGrid
-                    items={items}
-                    selected={selected}
-                    onToggle={onGridToggle}
-                    onOpen={openViewer}
-                    onCopyLink={onCopyLink}
-                    onDownloadItem={onDownloadItem}
-                    onOpenInBrowser={onOpenInBrowser}
-                    onRevealFile={onRevealFile}
-                  />
-                ) : (
-                  <GridSkeleton />
-                )}
+              <ProfileHeader user={view.page.user} loadedCount={view.page.items.length} />
+              {view.page.items.length > 0 ? (
+                <MediaGrid
+                  items={items}
+                  selected={selected}
+                  onToggle={onGridToggle}
+                  onOpen={openViewer}
+                  onCopyLink={onCopyLink}
+                  onDownloadItem={onDownloadItem}
+                  onOpenInBrowser={onOpenInBrowser}
+                  onRevealFile={onRevealFile}
+                />
+              ) : !view.page.loadingMore && !view.page.cursor ? (
+                // 主页确实没有可浏览的公开帖子：给出终止文案，
+                // 不能停在无限骨架屏让用户以为还在加载
+                <div className="flex flex-col items-center justify-center py-16 text-subtle">
+                  <LayoutGrid className="mb-2 h-8 w-8" />
+                  <span className="text-sm">{t('parse.profileEmpty')}</span>
+                </div>
+              ) : (
+                <GridSkeleton />
+              )}
 
                 {/* 分页：显式按钮，每次再取 10 条。
                     不再用滚动自动加载 —— 用户明确要求可控的分页节奏，

@@ -90,6 +90,7 @@ export const zhCN = {
     loadMore: '再加载 10 条',
     loadedCount: '已加载 {n} 条',
     loadedAll: '已加载全部 {n} 条',
+    profileEmpty: '该主页没有可公开浏览的帖子',
     loadingMore: '正在加载…'
   },
 

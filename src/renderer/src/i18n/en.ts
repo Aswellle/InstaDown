@@ -83,6 +83,7 @@ export const en = {
     loadMore: 'Load 10 more',
     loadedCount: '{n} loaded',
     loadedAll: 'All {n} loaded',
+    profileEmpty: 'This profile has no public posts to browse',
     loadingMore: 'Loading…'
   },
 
