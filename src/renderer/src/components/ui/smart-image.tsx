@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImageOff } from 'lucide-react'
 import { i18nT } from '@/i18n'
+import { useSettingsStore } from '@/stores/settings'
 import { cn } from '@/lib/utils'
 
 /**
@@ -25,6 +26,14 @@ async function resolveSrc(url: string): Promise<string | null> {
   if (hit) return hit
   const pending = inflight.get(url)
   if (pending) return pending
+
+  // 设置（设置 → 隐私）：关闭自动缓存后不再把新图片落盘，
+  // 但本会话已缓存的仍然可用（读取本地不产生新的磁盘占用）。
+  const autoCache = useSettingsStore.getState().settings?.autoCacheImages ?? true
+  if (!autoCache) {
+    resolved.set(url, url)
+    return url
+  }
 
   const p = window.instadown
     .cacheImages([url])
