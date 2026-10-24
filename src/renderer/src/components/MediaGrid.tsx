@@ -15,7 +15,7 @@ import { useTaskStore } from '@/stores/tasks'
 import { Checkbox } from '@/components/ui/primitives'
 import { SmartImage } from '@/components/ui/smart-image'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { useI18n } from '@/i18n'
 
 export function MediaGrid({
@@ -70,11 +70,10 @@ export function MediaGrid({
 
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(176px,1fr))] gap-3 pb-4">
-      {items.map((item, i) => (
+      {items.map((item) => (
         <MediaCard
           key={item.id}
           item={item}
-          index={i}
           selected={selected.has(item.id)}
           onToggle={onToggle}
           onOpen={onOpen}
@@ -106,14 +105,12 @@ export function MediaGrid({
 
 function MediaCard({
   item,
-  index,
   selected,
   onToggle,
   onOpen,
   onContextMenu
 }: {
   item: MediaItem
-  index: number
   selected: boolean
   onToggle: (id: string, e: React.MouseEvent) => void
   onOpen: (item: MediaItem) => void
@@ -129,11 +126,10 @@ function MediaCard({
     return m
   }, [tasks])
   const thumb = item.thumb_url || item.url
+  // 无逐卡片入场动画：几十张卡片各自的 framer-motion 实例会在解析
+  // 结果出现时争抢帧预算（侧栏面板曾因此卡顿，同一决策见 LibraryPanel）。
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: Math.min(index * 0.015, 0.25), ease: 'easeOut' }}
+    <div
       style={{ contentVisibility: 'auto' }}
       className={cn(
         'group relative cursor-pointer overflow-hidden rounded-xl border bg-surface transition-colors',
@@ -165,14 +161,21 @@ function MediaCard({
         )}
       </div>
 
-      {/* 勾选框 */}
+      {/* 勾选框：自己处理点击（不再依赖卡片 onClick），否则卡片内的
+          closest('button') 早退会让它成为看得见点不动的死控件 */}
       <div
         className={cn(
           'absolute right-2 top-2 transition-opacity',
           selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         )}
       >
-        <Checkbox checked={selected} />
+        <Checkbox
+          checked={selected}
+          onChange={(e) => {
+            e.stopPropagation()
+            onToggle(item.id, e)
+          }}
+        />
       </div>
 
       {/* 底部信息 */}
@@ -201,7 +204,7 @@ function MediaCard({
           )
         return null
       })()}
-    </motion.div>
+    </div>
   )
 }
 
