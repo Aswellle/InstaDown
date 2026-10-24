@@ -637,6 +637,11 @@ def _media_node_to_item(node: dict) -> dict | None:
     if not url:
         return None
     nid = str(node.get("id") or node.get("shortcode") or "")
+    # 与 HTML 扫描路径的 startswith("http") 防线保持一致：
+    # contextJSON 里的 video_url / display_url 同样是外部数据，
+    # 非 http(s) 值不进入媒体项（后续会作为 href / 下载源使用）
+    if not url.startswith("http"):
+        return None
     return {
         "id": nid or f"embed-{abs(hash(url)) % 10**10}",
         "type": "video" if is_video else "image",

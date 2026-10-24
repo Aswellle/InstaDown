@@ -134,9 +134,9 @@ function createWindow(settings: SettingsService): void {
   win.on('ready-to-show', () => win?.show())
   win.on('closed', () => (win = null))
 
-  // 外链走系统浏览器
+  // 外链走系统浏览器；仅放行 http(s)，其余协议（file:/smb:/自定义协议）直接拒绝
   win.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url)
+    if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
     return { action: 'deny' }
   })
 

@@ -24,6 +24,9 @@ export function SmartVideo({
   useEffect(() => setFailed(false), [src])
 
   if (failed) {
+    // "打开原链接"仅对 http(s) 渲染：src 来自 IG 返回数据，
+    // 其他协议的 href 会成为可点击的注入面
+    const openable = /^https?:/i.test(src)
     return (
       <div
         className={cn(
@@ -33,14 +36,16 @@ export function SmartVideo({
       >
         <VideoOff className="h-8 w-8" />
         <span className="text-xs">{t('viewer.videoBroken')}</span>
-        <a
-          href={src}
-          target="_blank"
-          rel="noreferrer"
-          className="text-xs text-rose-500 underline"
-        >
-          {t('viewer.openOriginal')}
-        </a>
+        {openable && (
+          <a
+            href={src}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-rose-500 underline"
+          >
+            {t('viewer.openOriginal')}
+          </a>
+        )}
       </div>
     )
   }

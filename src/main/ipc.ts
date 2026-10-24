@@ -416,7 +416,9 @@ export function registerIpc(deps: IpcDeps): void {
     if (path && existsSync(path)) shell.showItemInFolder(path)
   })
   handle('shell:openExternal', async (url: string) => {
-    if (url) await shell.openExternal(url)
+    // 只放行 http(s)：openExternal 会把任意协议交给系统默认处理器，
+    // file:// 可直接启动可执行文件，自定义协议同样可被注册表接管
+    if (/^https?:\/\//i.test(url)) await shell.openExternal(url)
   })
 
   // 解析服务手动复活（崩溃重启预算耗尽后的恢复入口）
