@@ -47,6 +47,8 @@ async function tryPython(cmd: string, args: string[]): Promise<string | null> {
       clearTimeout(timer)
       resolve(null)
     })
+    // 同上：探测进程瞬间退出时写入端可能 EPIPE
+    child.stdin.on('error', () => {})
     child.stdout.on('data', (d) => {
       if (String(d).includes('ok')) ok = true
     })
@@ -116,6 +118,11 @@ export class WorkerManager extends EventEmitter {
       windowsHide: true
     }) as ChildProcessWithoutNullStreams
     this.proc = proc
+
+    // 子进程死亡到 exit 回调之间存在窗口：向断管写入触发 EPIPE，
+    // 无监听的 error 事件会以未捕获异常击穿主进程。忽略写入错误，
+    // 由 exit 回调走既有的 rejectAll / 重启路径接管。
+    proc.stdin.on('error', () => {})
 
     let buffer = ''
     proc.stdout.setEncoding('utf8')
