@@ -1,4 +1,5 @@
 import { app, BrowserWindow, nativeTheme, Notification, shell } from 'electron'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { openDatabase } from './db/database'
 import { Repos } from './db/repos'
@@ -22,6 +23,21 @@ process.env.APP_ROOT = join(__dirname, '../..')
 registerImageScheme()
 
 const isDev = !app.isPackaged
+
+// Windows 的系统通知与任务栏按 AppUserModelId 归属应用身份；不设置时
+// 通知挂在 Electron 默认身份下，图标显示为 electron.exe 的默认原子图标
+// （实机 E2E 下载完成通知实测复现）。打包版必须与 electron-builder.yml
+// 的 appId 一致 —— NSIS 写入开始菜单快捷方式的 AUMID 由此匹配，通知
+// 才会使用应用图标；开发态没有安装快捷方式，通知图标由 Notification
+// 的 icon 选项显式提供。
+app.setAppUserModelId(app.isPackaged ? 'com.instadownloader.app' : process.execPath)
+
+// macOS 开发态的 dock 图标（打包版由 app bundle 自动提供）
+if (process.platform === 'darwin' && !app.isPackaged) {
+  const dockIcon = join(process.env.APP_ROOT ?? __dirname, 'build/icon.png')
+  if (existsSync(dockIcon)) app.dock?.setIcon(dockIcon)
+}
+
 let win: BrowserWindow | null = null
 
 const gotLock = app.requestSingleInstanceLock()
@@ -48,7 +64,10 @@ async function bootstrap(): Promise<void> {
     if (!Notification.isSupported()) return
     const notif = new Notification({
       title: uiLocale() === 'zh-CN' ? '下载完成' : 'Download complete',
-      body: filename
+      body: filename,
+      // 开发态没有 AUMID 快捷方式提供图标，显式指定应用图标；
+      // 打包版的图标由 AUMID（appId 匹配安装快捷方式）解析
+      ...(app.isPackaged ? {} : { icon: join(process.env.APP_ROOT ?? __dirname, 'build/icon.ico') })
     })
     notif.on('click', () => {
       if (destPath) shell.showItemInFolder(destPath)
