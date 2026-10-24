@@ -2,6 +2,7 @@ import { app, net, protocol } from 'electron'
 import { createHash } from 'node:crypto'
 import {
   closeSync,
+  createReadStream,
   existsSync,
   mkdirSync,
   openSync,
@@ -13,6 +14,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
+import { Readable } from 'node:stream'
 
 /**
  * 图片本地缓存（docs/10、docs/11：本地优先）。
@@ -164,10 +166,16 @@ export function serveImageCache(): void {
         })
       }
 
-      const buf = readFileSync(path)
-      return new Response(new Uint8Array(buf), {
+      // 200 全量响应用流式返回：本地已下载的视频可能上百 MB，
+      // readFileSync 整文件进内存会同时占内存并阻塞主进程事件循环
+      const stream = createReadStream(path)
+      return new Response(Readable.toWeb(stream) as unknown as ReadableStream, {
         status: 200,
-        headers: { 'content-type': mime, 'accept-ranges': 'bytes' }
+        headers: {
+          'content-type': mime,
+          'accept-ranges': 'bytes',
+          'content-length': String(size)
+        }
       })
     } catch {
       return new Response('read failed', { status: 500 })
