@@ -40,6 +40,7 @@ function makeUser(username: string): ProfileUser {
 interface Opts {
   shortcodes?: string[]
   domOk?: boolean
+  notLoggedIn?: boolean
   userFails?: boolean
   failShortcodes?: string[]
   browserUser?: Partial<ProfileUser> | null
@@ -49,12 +50,13 @@ function makeDeps(opts: Opts = {}) {
   const shortcodes =
     opts.shortcodes ?? Array.from({ length: 25 }, (_, i) => `sc${String(i).padStart(2, '0')}`)
   const upserted: MediaCollection['items'] = []
-  const listCalls: Array<{ username: string; rounds: number }> = []
+  const listCalls: Array<{ username: string; minCount: number }> = []
 
   const dom: DomProfileSource & { listCalls: typeof listCalls } = {
     listCalls,
-    async listProfileShortcodes(username, rounds) {
-      listCalls.push({ username, rounds })
+    async listProfileShortcodes(username, minCount) {
+      listCalls.push({ username, minCount })
+      if (opts.notLoggedIn) return { ok: false, shortcodes: [], notLoggedIn: true }
       if (opts.domOk === false) return { ok: false, shortcodes: [], error: 'load failed' }
       return { ok: true, shortcodes }
     },
@@ -115,11 +117,11 @@ describe('ProfileArchive.getProfileMedia', () => {
     expect(r.items).toHaveLength(10)
     expect(r.items[0].id).toBe('sc00')
     expect(r.nextCursor).toBe('dom:1')
-    // 第 0 页不额外滚动
-    expect(d.dom.listCalls[0].rounds).toBe(0)
+    // 首页只需 11 条（10 + hasMore 判定）
+    expect(d.dom.listCalls[0].minCount).toBe(11)
   })
 
-  it('第二页：切片 11-20，滚动深度随页数增长', async () => {
+  it('第二页：切片 11-20，需求量随页数递增', async () => {
     const d = makeDeps()
     const arc = new ProfileArchive(d.worker, d.repos, d.dom)
     const r = await arc.getProfileMedia('alice', 'dom:1')
@@ -128,7 +130,31 @@ describe('ProfileArchive.getProfileMedia', () => {
     expect(r.items[0].id).toBe('sc10')
     expect(r.items).toHaveLength(10)
     expect(r.nextCursor).toBe('dom:2')
-    expect(d.dom.listCalls[0].rounds).toBe(2)
+    expect(d.dom.listCalls[0].minCount).toBe(21)
+  })
+
+  it('缓存：已收集够的页不再触发 DOM 抓取（增量翻页）', async () => {
+    const d = makeDeps()
+    const arc = new ProfileArchive(d.worker, d.repos, d.dom)
+    await arc.getProfileMedia('alice') // 首页收集 25 条
+    const r = await arc.getProfileMedia('alice', 'dom:1') // 第二页在缓存内
+    expect(r.ok).toBe(true)
+    expect(d.dom.listCalls).toHaveLength(1)
+  })
+
+  it('首页刷新：重新解析（无 cursor）绕过缓存重新抓取', async () => {
+    const d = makeDeps()
+    const arc = new ProfileArchive(d.worker, d.repos, d.dom)
+    await arc.getProfileMedia('alice')
+    await arc.getProfileMedia('alice')
+    expect(d.dom.listCalls).toHaveLength(2)
+  })
+
+  it('页面停在登录墙时返回 not-logged-in（区分于加载失败）', async () => {
+    const d = makeDeps({ notLoggedIn: true })
+    const arc = new ProfileArchive(d.worker, d.repos, d.dom)
+    const r = await arc.getProfileMedia('alice')
+    expect(r).toEqual({ ok: false, reason: 'not-logged-in' })
   })
 
   it('恰好取尽时游标为 null（不再出现加载更多）', async () => {

@@ -398,6 +398,8 @@ export async function clearInstagramLoginSession(): Promise<void> {
 export interface ProfileShortcodes {
   ok: boolean
   shortcodes: string[]
+  /** 页面最终停在登录墙：分区会话不可用（区别于加载失败） */
+  notLoggedIn?: boolean
   error?: string
 }
 
@@ -411,17 +413,20 @@ export interface ProfileShortcodes {
  *
  * 拿到 shortcode 后，媒体本体走既有的公开 embed 解析（docs/dev/06），
  * 无需登录即可取到原始画质。
+ *
+ * minCount：滚动加载到收集满该数量为止（或连续两轮无增长视为到底）。
+ * 由调用方按需递增，避免"每翻一页都从主页顶部完整重放"的二次方成本。
  */
 export function listProfileShortcodes(
   username: string,
-  scrollRounds = 0
+  minCount = 12
 ): Promise<ProfileShortcodes> {
-  return serialized(() => listProfileShortcodesImpl(username, scrollRounds))
+  return serialized(() => listProfileShortcodesImpl(username, minCount))
 }
 
 async function listProfileShortcodesImpl(
   username: string,
-  scrollRounds: number
+  minCount: number
 ): Promise<ProfileShortcodes> {
   const win = new BrowserWindow({
     show: false,
@@ -446,6 +451,11 @@ async function listProfileShortcodesImpl(
       }
     }
     if (!loaded) return { ok: false, shortcodes: [], error: lastErr || 'load failed' }
+    // 页面被重定向到登录墙：分区会话不可用（资料页对未登录也可见，
+    // 但帖子网格不会渲染，继续等只会空转）
+    if (/\/accounts\/login/i.test(win.webContents.getURL())) {
+      return { ok: false, shortcodes: [], notLoggedIn: true }
+    }
     // IG 的帖子网格由 JS 异步填充，固定等待不可靠：轮询直到出现链接
     const js = `(async () => {
       // 注意：IG 的帖子链接是**绝对 URL**（https://www.instagram.com/p/XXX/），
@@ -464,11 +474,17 @@ async function listProfileShortcodesImpl(
         await new Promise((r) => setTimeout(r, 1000))
         codes = collect()
       }
-      for (let i = 0; i < ${Math.max(0, Math.floor(scrollRounds))}; i++) {
+      // 滚动加载直到收集满 minCount，或连续两轮无增长（到底/隐藏加载）
+      let stall = 0
+      while (codes.length < ${Math.max(1, Math.floor(minCount))} && stall < 2) {
         window.scrollTo(0, document.body.scrollHeight)
         await new Promise((r) => setTimeout(r, 1800))
+        const next = collect()
+        if (next.length === codes.length) stall += 1
+        else stall = 0
+        codes = next
       }
-      return JSON.stringify([...new Set(collect())])
+      return JSON.stringify([...new Set(codes)])
     })()`
     const raw = (await Promise.race([
       win.webContents.executeJavaScript(js, true) as Promise<string>,

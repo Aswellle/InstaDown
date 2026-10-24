@@ -20,8 +20,8 @@ const CURSOR_PREFIX = 'dom:'
 export interface DomProfileSource {
   listProfileShortcodes(
     username: string,
-    scrollRounds: number
-  ): Promise<{ ok: boolean; shortcodes: string[]; error?: string }>
+    minCount: number
+  ): Promise<{ ok: boolean; shortcodes: string[]; notLoggedIn?: boolean; error?: string }>
   fetchProfileInBrowser(username: string): Promise<Partial<ProfileUser> | null>
 }
 
@@ -46,6 +46,11 @@ export function parseDomCursor(cursor: string | null | undefined): number {
 }
 
 export class ProfileArchive {
+  /** 已收集的 shortcode 缓存（username → 列表）。翻页时按需增量补滚，
+   *  而不是每页都从主页顶部完整重放（那会让第 N 页付出 O(N) 轮滚动，
+   *  每轮都是对 IG 的真实请求）。首次解析（无 cursor）时绕过缓存刷新。 */
+  private cache = new Map<string, string[]>()
+
   constructor(
     private worker: WorkerSource,
     private repos: Repos,
@@ -57,13 +62,24 @@ export class ProfileArchive {
     cursor?: string | null
   ): Promise<ProfileMediaResult> {
     const page = parseDomCursor(cursor)
-    const listed = await this.dom.listProfileShortcodes(username, page * 2)
-    if (!listed.ok || listed.shortcodes.length === 0) return { ok: false, reason: 'load-failed' }
+    const fresh = cursor == null || cursor === ''
+    const cached = fresh ? [] : (this.cache.get(username) ?? [])
+    const needed = (page + 1) * PER_PAGE + 1 // +1 用于 hasMore 判定
 
-    const slice = listed.shortcodes.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
+    let shortcodes = cached
+    if (shortcodes.length < needed) {
+      const listed = await this.dom.listProfileShortcodes(username, needed)
+      if (listed.notLoggedIn) return { ok: false, reason: 'not-logged-in' }
+      if (!listed.ok) return { ok: false, reason: 'load-failed' }
+      shortcodes = listed.shortcodes
+      this.cache.set(username, shortcodes)
+    }
+    if (shortcodes.length === 0) return { ok: false, reason: 'not-found' }
+
+    const slice = shortcodes.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
     if (slice.length === 0) return { ok: false, reason: 'not-found' }
 
-    const user = await this.resolveUser(username, listed.shortcodes.length)
+    const user = await this.resolveUser(username, shortcodes.length)
 
     // 逐个解析（公开 embed 路径）。worker 是单进程串行 + 内置 1.5s 限流，
     // 并发发起不会更快，因此按序请求；单帖失败不影响整页。
@@ -81,7 +97,7 @@ export class ProfileArchive {
     }
     if (items.length === 0) return { ok: false, reason: 'load-failed' }
 
-    const hasMore = listed.shortcodes.length > (page + 1) * PER_PAGE
+    const hasMore = shortcodes.length > (page + 1) * PER_PAGE
     return { ok: true, user, items, nextCursor: hasMore ? encodeDomCursor(page + 1) : null }
   }
 
