@@ -78,6 +78,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   cancelAccountUse: () => set({ accountConfirm: null }),
 
   doParse: async (url) => {
+    // 解析中忽略重复触发（连按 Enter / 剪贴板与手动并发）。
+    // 卡在 loading 时可用 Esc 返回主页重置。
+    if (get().view.mode === 'loading') return
     set({
       view: { mode: 'loading', hint: 'home.parsing' },
       selected: new Set(),
